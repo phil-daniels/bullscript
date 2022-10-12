@@ -8,8 +8,14 @@ module.exports = (indexTemplatePath, browserTemplatePath, serverTemplatePath, fi
   let browserTemplateCode = fs.readFileSync(browserTemplatePath, 'utf-8');
   let indexTemplateCode = fs.readFileSync(indexTemplatePath, 'utf-8');
   let {serverInitCode, serverRequestCode, browserCode} = generateAppCode(files);
-  browserCode = esbuild.transformSync(browserCode)?.code;
+  try {
+    browserCode = esbuild.transformSync(browserCode)?.code;
+  } catch (e) {
+    console.log(browserCode);
+    throw e;
+  }
   browserTemplateCode = browserTemplateCode.replace("/*BROWSER_APP_CODE*/", browserCode);
+  browserTemplateCode = browserTemplateCode.replaceAll(`\\`, `\\\\`).replaceAll(`\``, `\\\``)
   indexTemplateCode = indexTemplateCode.replace("/*BROWSER_CODE*/", browserTemplateCode);
   serverTemplateCode = serverTemplateCode
       .replace("/*BROWSER_HTML*/", indexTemplateCode)
@@ -23,10 +29,10 @@ function generateAppCode(files) {
   let appServerRequestCode = "";
   let appBrowserCode = "";
   for (const file of files) {
-    const componentName = `$${file.path.replace(`/`, `_`).replace(`.`, `$`)}`;
-    appBrowserCode += `const ${componentName} = function($props) {`;
+    const moduleName = `$${file.path.replaceAll(`/`, `_`).replaceAll(`.`, `$`)}`;
+    appBrowserCode += `const ${moduleName} = function($props) {`;
     const tokens = lex(file.contents);
-    const {serverInit, serverRequest, browser} = generateJs(tokens);
+    const {serverInit, serverRequest, browser} = generateJs(tokens, file.name.endsWith(`.component.bs`));
     appServerInitCode += serverInit;
     appServerRequestCode += serverRequest;
     appBrowserCode += browser;

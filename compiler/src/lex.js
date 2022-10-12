@@ -11,7 +11,7 @@ const NUMBER = /^[0-9]+/
 const BOUNDRIES = [`\``, `"`, `(`, `)`, `{`, `}`, '[', `]`, `/*`];
 
 module.exports = input => {
-  const lexer = createLexer(input);
+  const lexer = createLexer(input.replaceAll(`\r\n`, `\n`));
   const is = lexer.is.bind(lexer);
   const eof = lexer.eof.bind(lexer);
   const matches = lexer.matches.bind(lexer);
@@ -23,35 +23,41 @@ module.exports = input => {
   const eat = lexer.eat.bind(lexer);
 
   while (!eof()) {
-    convertIndent(-1, null);
+    convertIndent(-3, null);
   }
   return lexer.output;
 
   function convertIndent(parentIndent, terminators = [`}`, `)`, `]`]) {
     lexer; // TODO remove, doesn't show up in debugger if not used
-    const myIndent = parentIndent + 1;
+    const myIndent = parentIndent + 3;
     let deindent = false;
     const startOutputCount = lexer.output.length;
     while (!eof() && (!terminators || !is(...terminators)) && !deindent) {
-      lexUntil(`\n`, ...BOUNDRIES);
-      if (eof()) break;
-      if (is(`\n`)) {
-        skip(); // newline
-        const indent = regexLength(SPACES);
-        if (indent === myIndent) {
-          create(`statementend`);
-        } else if (indent > myIndent) {
-          create(`blockstart`);
-          convertIndent(myIndent);
-          create(`blockend`, `statementend`);
-        } else {
-          deindent = true;
+      let preStatementOutputCount = lexer.output.length;
+      while(!eof() && !is(`\n`)) {
+        lexUntil(`\n`, ...BOUNDRIES);
+        if (!is(`\n`)) {
+          lexAtBoundry();
         }
-      } else {
-        lexAtBoundry();
+      }
+      if (!eof()) {
+        skip(); // newline
+        if (lexer.output.length > preStatementOutputCount) {
+          const indent = regexLength(SPACES);
+          if (indent === myIndent) {
+            create(`statementend`);
+          } else if (indent === myIndent + 3) {
+            create(`blockstart`);
+            convertIndent(myIndent);
+            create(`blockend`, `statementend`);
+          } else if (index < myIndent && (index % 3 === 0)) {
+            deindent = true;
+          } else {
+            throw new Error(`invalid indent`);
+          }
+        } // else is blank line, ignore
       }
     }
-    if (lexer.output.length > startOutputCount) create(`statementend`);
   }
 
   function convertParenOrCurlyOrBracket(terminator) {
@@ -143,6 +149,8 @@ module.exports = input => {
         create(`numberliteral`);
       } else if (matches(`=`)) {
         create(`equals`);
+      } else if (matches(`:`)) {
+        create(`colon`);
       } else if (matches(`,`)) {
         create(`comma`);
       } else {

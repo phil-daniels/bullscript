@@ -1,6 +1,6 @@
 const createParser = require(`./create-parser`);
 
-module.exports = tokens => {
+module.exports = (tokens, isComponent) => {
   const parser = createParser(tokens);
   const eof = parser.eof.bind(parser);
   const is = parser.is.bind(parser);
@@ -8,26 +8,45 @@ module.exports = tokens => {
   const isKeyword = parser.isKeyword.bind(parser);
   const skip = parser.skip.bind(parser);
   const eatValue = parser.eatValue.bind(parser);
+  const eatRequired = parser.eatRequired.bind(parser);
+  const eatValueRequired = parser.eatValueRequired.bind(parser);
+  const skipRequired = parser.skipRequired.bind(parser);
 
-  const {browser, server, serverInit} = generateBlock(); // keep only the js
+  const {browser, server, serverInit} = generateBlockContents(isComponent); // keep only the js
   return {browser, server, serverInit};
 
-  function generateBlock() {
+  function generateBlockContents(isComponent) {
+    parser;
     const blockCode = code();
     while (!eof()) {
       const statementCode = generateStatement();
+      statementCode.prependIfExists(`browser`, `() => `);
+      statementCode.prependIfExists(`server`, `() => `);
+      statementCode.prependIfExists(`serverInit`, `() => `);
+      statementCode.appendIfExists(`browser`, `,`);
+      statementCode.appendIfExists(`server`, `,`);
+      statementCode.appendIfExists(`serverInit`, `,`);
       blockCode.append(statementCode);
       if (!is(`statementend`)) throw new Error();
       skip(); // `statementend`
     }
-    
-    const varsToCode = vars => vars.length > 0 ? `let ${vars.join(`,`)};` : ``;
-    blockCode.browser = varsToCode(blockCode.browserBlockVars) + blockCode.browser;
-    blockCode.server = varsToCode(blockCode.serverBlockVars) + blockCode.server;
-    blockCode.serverInit = varsToCode(blockCode.serverInitBlockVars) + blockCode.serverInit;
-    if (blockCode.browser) blockCode.browser = `{${blockCode.browser}}`;
-    if (blockCode.server) blockCode.server = `{${blockCode.server}}`;
-    if (blockCode.serverInit) blockCode.serverInit = `{${blockCode.serverInit}}`;
+
+    function buildBlock(blockCode, type) {
+      const blockVars = blockCode[`${type}BlockVars`];
+      if (!blockCode[type] && blockVars.length === 0) return;
+      blockCode[type] = `
+        ${isComponent ? `return bs.children($children => {` : ``}
+        ${blockVars.length > 0 ? `let ${blockVars.join(`,`)};` : ``};
+        ${!isComponent ? `() => ` : ``}bs.pipe(
+        ${blockCode[type]}
+        )
+        ${isComponent ? `});` : ``}
+      `
+    }
+
+    buildBlock(blockCode, `browser`);
+    buildBlock(blockCode, `server`);
+    buildBlock(blockCode, `serverInit`);
     return blockCode;
   }
 
@@ -35,6 +54,8 @@ module.exports = tokens => {
     parser;
     if (isKeyword(`state`)) {
       return generateStateDeclaration();
+    } else if (is(`colon`)) {
+      return generateTagInstantiation();
     } else {
       throw new Error();
     }
@@ -47,17 +68,61 @@ module.exports = tokens => {
     const expression = generateExpression();
 
     return code(
-      `const $state_${name} = bs.state("${name}", $ => ${name} = $, ${expression});`,
+      `$state_${name} = bs.state("${name}", $ => ${name} = $, ${expression})`,
       ``,
       ``,
       ``,
-      [name],
+      [name, `$state_${name}`],
     );
+  }
+
+  function generateTagInstantiation() {
+    skip(); // `:`
+    const tagType = eatValue();
+    const expressions = [];
+    while (!eof() && !is(`statementend`, `curlystart`)) {
+      expressions.push(generateExpression());
+    }
+    let expressionObj = `{}`;
+    if (is(`curlystart`)) {
+      expressionObj = generateObjectLiteral();
+    }
+    let children = "";
+    if (is(`blockstart`)) {
+      skip();
+      children = generateBlockContents();
+      skip(); // `blockend`
+    }
+
+    return code(
+      `{
+        $children.push(bs.tag("${tagType}",[${expressions.join(`,`)}],${expressionObj}${children ? `,${children}` : ``}));
+      }`,
+      ``,
+      ``,
+      ``,
+    );
+  }
+
+  function generateObjectLiteral() {
+    skipRequired(); // `{`
+    let first = true;
+    const props = {};
+    while (first || is(`comma`)) {
+      while (is(`comma`)) skip();
+      const prop = eatValueRequired(`identifier`);
+      skipRequired(`colon`);
+      const value = generateExpression();
+      props[prop] = value;
+    }
+    skipRequired(`curlyend`); // `}`
   }
   
   function generateExpression() {
     if (is(`stringstart`)) {
       return generateStringExpression();
+    } else if (is(`bracketstart`)) {
+      return generateListExpression();
     }
   }
 
@@ -74,6 +139,23 @@ module.exports = tokens => {
     skip(); // `"`
 
     return `"${pieces.join("")}"`;
+  }
+
+  function generateListExpression() {
+    const expressions = [];
+    skip(); // `[`
+    let first = true;
+    while (!eof() && !is(`bracketend`)) {
+      if (!first) {
+        if (!is(`comma`)) throw new Error(`expecting comma`);
+        skip();
+        first = true;
+      }
+      generateExpression();
+    }
+    skip(); // `]`
+
+    return `[${expressions.join(",")}]`;
   }
 
   function code(browser = ``, server = ``, serverInit = ``, database = ``, browserBlockVars = [],
@@ -95,6 +177,14 @@ module.exports = tokens => {
         pushAll(this.serverBlockVars, otherCode.serverBlockVars);
         pushAll(this.serverInitBlockVars, otherCode.serverInitBlockVars);
       },
+      prependIfExists: function(type, str) {
+        const existingValue = this[type];
+        if (existingValue) this[type] = str + existingValue;
+      },
+      appendIfExists: function(type, str) {
+        const existingValue = this[type];
+        if (existingValue) this[type] = existingValue + str;
+      }
     };
   }
 

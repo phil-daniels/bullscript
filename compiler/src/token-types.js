@@ -1,7 +1,10 @@
 module.exports = [
   `bracketend`,
   `bracketstart`,
+  `colon`,
   `comma`,
+  `curlystart`,
+  `curlyend`,
   `equals`,
   `identifier`,
   `numberliteral`,

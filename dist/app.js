@@ -39,8 +39,9 @@ appHtml = `
 
 // Object/Properties ===============================
 
-let stateIndex = {};
-let lastStateId = 0;
+const stringDefaultProps = {
+  h1: "innerText"
+};
 
 /*
 
@@ -472,11 +473,11 @@ bs.fn = (fn, argFns) => {
   );
 }
 
-bs.error = (message) => {
+bs.error = message => {
   return {$type: "error", message};
 }
 
-bs.httpGet = (url) => {
+bs.httpGet = url => {
   return $promise($p => {
     var xhttp = new XMLHttpRequest();
     xhttp.onreadystatechange = function() {
@@ -489,18 +490,51 @@ bs.httpGet = (url) => {
   });
 }
 
-const $main$bs = function($props) {
-  {
-    let newTodoLabel;
-    const $state_newTodoLabel = bs.state("newTodoLabel", ($) => newTodoLabel = $, "");
+bs.tag = (tagType, expressions, props, children) => {
+  for (let expression of expressions) {
+    const expressionType = typeof expression;
+    if (expressionType === "string") {
+      const prop = stringDefaultProps[tagType];
+      if (prop) {
+        props[prop] = expression;
+      } else {
+        throw new Error("tag \\"" + tagType + "\\" does not have a default property for anonymous expression of type \\"" + expressionType + "\\"");
+      }
+    }
   }
+  let innerText = "";
+  if (props.innerText) {
+    innerText = props.innerText;
+    delete props.innerText;
+  }
+  return React.createElement(tagType, props, innerText, children);
+};
+
+bs.children = fn => {
+  const children = [];
+  fn(children);
+  return children.length === 1 ? children[0] : children;
+};
+
+const $main$component$bs = function($props) {
+  return bs.children(($children) => {
+    let newTodoLabel, $state_newTodoLabel, todos, $state_todos;
+    ;
+    bs.pipe(
+      () => $state_newTodoLabel = bs.state("newTodoLabel", ($) => newTodoLabel = $, ""),
+      () => $state_todos = bs.state("todos", ($) => todos = $, []),
+      () => {
+        $children.push(bs.tag("h1", ["todos"], {}));
+      }
+    );
+  });
 };
 
 
 {
   const root = ReactDOM.createRoot(document.getElementById('root'));
   root.render(
-    React.createElement($main$bs, null, null)
+    React.createElement($main$component$bs, null, null)
     // React.createElement(React.StrictMode, null, null,
     //   React.createElement($main$bs, null, null)
     // )

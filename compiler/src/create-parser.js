@@ -29,5 +29,22 @@ module.exports = input => {
       this.skip();
       return value;
     },
+    eat: function() {
+      const value = this.input[0];
+      this.skip();
+      return value;
+    },
+    eatRequired: function(tokenType) {
+      if (this.is(tokenType)) return this.eat();
+      else throw new Error(`expecting ${tokenType}`);
+    },
+    eatValueRequired: function(tokenType) {
+      if (this.is(tokenType)) return this.eatValue();
+      else throw new Error(`expecting ${tokenType}`);
+    },
+    skipRequired: function(tokenType) {
+      if (this.is(tokenType)) this.skip();
+      else throw new Error(`expecting ${tokenType}`);
+    },
   };
 }

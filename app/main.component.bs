@@ -1,4 +1,8 @@
 state newTodoLabel = ""
+state todos = []
+
+:h1 "todos"
+:input {type: "text"}
 
 /*
 component
