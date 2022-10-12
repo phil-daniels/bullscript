@@ -1,0 +1,63 @@
+state newTodoLabel = ""
+
+/*
+component
+
+use auth
+
+use database
+   table Todo
+      label String{maxLength: 40}
+      completed Boolean
+
+      filter select userId == auth.loggedInUserId
+      modify insert #{userId: auth.loggedInUserId}
+
+route "/todos" && auth.isLoggedIn
+   style .completed
+      line-decoration: line-through
+
+   state newTodoLabel = ""
+   state todos = select Todo
+
+   fn add() ->
+      insert Todo #{label: newTodoLabel, completed: false} ; component.refresh()
+
+   fn markComplete(todo) ->
+      update todo #{completed: true} ; component.refresh()
+
+   fn remove(todo) ->
+      delete todo ; component.refresh()
+
+   :h1 "todos"
+   :input *newTodoLabel {type: "text", onEnter: add}
+   for (todo in todos)
+      :div if (todo.completed) .completed {onClick: -> markComplete(todo)}
+         todo.label
+         .btn.danger "Delete" {onClick: -> remove(todo)}
+
+route auth.loginRoute
+
+route auth.loginRoute
+
+route default
+   :div/button "Login" changeRoute("/login")
+   :div/button "Register" changeRoute("/register")
+*/
+
+/*
+use bootstrap
+
+style heading
+  font-size: 30px
+style todoRow
+  border: 1px solid black
+*/
+
+/*
+// import in logic
+display(../../img/logo.png)
+display(./img/logo.png)
+// import a component
+:(./App) "hey" {name: "Bob"}
+*/
