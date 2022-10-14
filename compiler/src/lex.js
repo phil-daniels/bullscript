@@ -73,13 +73,13 @@ module.exports = input => {
       skip();
       convertParenOrCurlyOrBracket(`)`);
       create(`parenend`);
-      if (!eat() !== `)`) throw new Error(`expecting ")" at position ${lexer.eatenInput.length}, but was "${lexer.input}"`);
+      if (eat() !== `)`) throw new Error(`expecting ")" at position ${lexer.eatenInput.length}, but was "${lexer.input}"`);
     } else if (is(`{`)) {
       create(`curlystart`);
       skip();
       convertParenOrCurlyOrBracket(`}`);
       create(`curlyend`);
-      if (!eat() !== `}`) throw new Error(`expecting "}" at position ${lexer.eatenInput.length}, but was "${lexer.input}"`);
+      if (eat() !== `}`) throw new Error(`expecting "}" at position ${lexer.eatenInput.length}, but was "${lexer.input}"`);
     } else if (is(`[`)) {
       create(`bracketstart`);
       skip();
