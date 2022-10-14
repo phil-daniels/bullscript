@@ -1,17 +1,21 @@
 const createParser = require(`./create-parser`);
 
-module.exports = (tokens, isComponent) => {
+module.exports = tokens => {
   const parser = createParser(tokens);
   const eof = parser.eof.bind(parser);
   const is = parser.is.bind(parser);
   const isValue = parser.isValue.bind(parser);
-  const isKeyword = parser.isKeyword.bind(parser);
   const skip = parser.skip.bind(parser);
   const eatValue = parser.eatValue.bind(parser);
   const eatRequired = parser.eatRequired.bind(parser);
   const eatValueRequired = parser.eatValueRequired.bind(parser);
   const skipRequired = parser.skipRequired.bind(parser);
 
+  let isComponent = false;
+  if (is(`identifier`) && isValue(`component`)) {
+    isComponent = true;
+    skip();
+  }
   const {browser, server, serverInit} = generateBlockContents(isComponent); // keep only the js
   return {browser, server, serverInit};
 
@@ -19,7 +23,7 @@ module.exports = (tokens, isComponent) => {
     parser;
     const blockCode = code();
     while (!eof()) {
-      const statementCode = generateStatement();
+      const statementCode = generateStatementCode();
       statementCode.prependIfExists(`browser`, `() => `);
       statementCode.prependIfExists(`server`, `() => `);
       statementCode.prependIfExists(`serverInit`, `() => `);
@@ -50,18 +54,18 @@ module.exports = (tokens, isComponent) => {
     return blockCode;
   }
 
-  function generateStatement() {
+  function generateStatementCode() {
     parser;
-    if (isKeyword(`state`)) {
-      return generateStateDeclaration();
+    if (isValue(`state`)) {
+      return generateStateDeclarationCode();
     } else if (is(`colon`)) {
-      return generateTagInstantiation();
+      return generateTagInstantiationCode();
     } else {
       throw new Error();
     }
   }
 
-  function generateStateDeclaration() {
+  function generateStateDeclarationCode() {
     skip(2); // `state`, ` `
     const name = eatValue();
     skip(); // `=`
@@ -76,16 +80,45 @@ module.exports = (tokens, isComponent) => {
     );
   }
 
-  function generateTagInstantiation() {
+  function generateTagInstantiationCode() {
     skip(); // `:`
+    function createTwoWayBindingArg(name) {
+      return `${}`;
+    }
     const tagType = eatValue();
     const expressions = [];
     while (!eof() && !is(`statementend`, `curlystart`)) {
-      expressions.push(generateExpression());
+      if (is(`asterisk`)) {
+        skip(); // `*`
+        const name = eatValue(`identifier`);
+        expressions.push(name);
+        expressions.push(`$v => ${name} = $v`);
+      } else {
+        expressions.push(generateExpression());
+      }
     }
-    let expressionObj = `{}`;
+    const expressionObj = `{}`;
     if (is(`curlystart`)) {
-      expressionObj = generateObjectLiteral();
+      skipRequired(`curlystart`); // `{`
+      let first = true;
+      const props = {};
+      while (first || is(`comma`)) {
+        first = false;
+        while (is(`comma`)) skip();
+        const prop = eatValueRequired(`identifier`);
+        skipRequired(`colon`);
+        if (is(`*`)) {
+          skip(); // `*`
+          const name = eatValue(`identifier`);
+          expressions.push(`${prop}:${name}`);
+          expressions.push(`on${prop}Change:$v => ${name} = $v`);
+        } else {
+          const value = generateExpression();
+          props[prop] = value;
+        }
+      }
+      skipRequired(`curlyend`); // `}`
+      expressionObj = `{${Object.keys(props).map(key => `${key}:${props[key]}`).join(`,`)}}`;
     }
     let children = "";
     if (is(`blockstart`)) {
@@ -104,11 +137,12 @@ module.exports = (tokens, isComponent) => {
     );
   }
 
-  function generateObjectLiteral() {
-    skipRequired(); // `{`
+  function generateTagInstantiationObjectLiteral() {
+    skipRequired(`curlystart`); // `{`
     let first = true;
     const props = {};
     while (first || is(`comma`)) {
+      first = false;
       while (is(`comma`)) skip();
       const prop = eatValueRequired(`identifier`);
       skipRequired(`colon`);
@@ -116,6 +150,8 @@ module.exports = (tokens, isComponent) => {
       props[prop] = value;
     }
     skipRequired(`curlyend`); // `}`
+    
+    return `{${Object.keys(props).map(key => `${key}:${props[key]}`).join(`,`)}}`;
   }
   
   function generateExpression() {
@@ -156,6 +192,15 @@ module.exports = (tokens, isComponent) => {
     skip(); // `]`
 
     return `[${expressions.join(",")}]`;
+  }
+
+  function generateTwoWayBinding(mode) {
+    if (![`param`, `arg`].includes(mode)) throw new Error(mode);
+    skipRequired(`asterisk`);
+    const name = eatValue(`identifier`);
+
+    return mode === `param`
+        ? ``
   }
 
   function code(browser = ``, server = ``, serverInit = ``, database = ``, browserBlockVars = [],

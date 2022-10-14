@@ -32,7 +32,7 @@ function generateAppCode(files) {
     const moduleName = `$${file.path.replaceAll(`/`, `_`).replaceAll(`.`, `$`)}`;
     appBrowserCode += `const ${moduleName} = function($props) {`;
     const tokens = lex(file.contents);
-    const {serverInit, serverRequest, browser} = generateJs(tokens, file.name.endsWith(`.component.bs`));
+    const {serverInit, serverRequest, browser} = generateJs(tokens);
     appServerInitCode += serverInit;
     appServerRequestCode += serverRequest;
     appBrowserCode += browser;

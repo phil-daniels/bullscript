@@ -1,4 +1,5 @@
 module.exports = [
+  `asterisk`,
   `bracketend`,
   `bracketstart`,
   `colon`,

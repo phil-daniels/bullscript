@@ -7,16 +7,11 @@ module.exports = input => {
     eof: function() {
       return this.input.length === 0;
     },
-    is: function(tokenType) {
-      return this.input[0]?.tokenType === tokenType;
+    is: function(...tokenTypes) {
+      return tokenTypes.includes(this.input[0]?.tokenType);
     },
-    isValue: function(value) {
-      return this.input[0]?.value === value;
-    },
-    isKeyword: function(keyword) {
-      const t = this.input[0];
-      const s = input[1];
-      return t && s && t.tokenType === `identifier` && t.value === keyword && s.tokenType === `space`;
+    isValue: function(...values) {
+      return values.includes(this.input[0]?.values);
     },
     skip: function(num = 1) {
       for (let i = 0; i < num; i++) {

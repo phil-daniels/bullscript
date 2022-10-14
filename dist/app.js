@@ -525,6 +525,9 @@ const $main$component$bs = function($props) {
       () => $state_todos = bs.state("todos", ($) => todos = $, []),
       () => {
         $children.push(bs.tag("h1", ["todos"], {}));
+      },
+      () => {
+        $children.push(bs.tag("input", [], { type: "text" }));
       }
     );
   });

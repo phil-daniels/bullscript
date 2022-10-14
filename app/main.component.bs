@@ -1,8 +1,10 @@
+component
+
 state newTodoLabel = ""
 state todos = []
 
 :h1 "todos"
-:input {type: "text"}
+:input *newTodoLabel
 
 /*
 component
@@ -64,4 +66,35 @@ display(../../img/logo.png)
 display(./img/logo.png)
 // import a component
 :(./App) "hey" {name: "Bob"}
+*/
+
+/*
+// indent rules
+fn hey() ->
+   console.log("hey")
+   fewArgs(1, 2, 3)
+   escapeOneNewline(1, 2, 3\
+      4, 5, 6)
+   `hey  // if a statement is surrounded by backticks, newlines are escaped
+     .man()
+        .lots()
+.of()
+          .calls()`
+   escapeManyNewLines`( // can surround parens, curlies or brackets
+      1, 2, 3,
+      4, 5, 6,
+      7, 8, 9,
+   )`
+   // backtick only escapes 1 level, then it returns to normal indent
+   // this allows multiple indented expressions to be nested inside
+   // 1 statement
+   manyCallbacks`(
+      num ->
+         console.log("okay")
+         lotsAArgs`(
+            1, 2, 3, 4, 5, 6
+         )`,
+      num ->
+         console.log("okay")
+   )`
 */

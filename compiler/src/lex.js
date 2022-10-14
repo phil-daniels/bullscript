@@ -139,12 +139,6 @@ module.exports = input => {
         discardMatch();
       } else if (matchesRegex(IDENTIFIER)) {
         create(`identifier`);
-        const spaceCount = regexLength(SPACES);
-        if (spaceCount > 0) {
-          if (regexLength(SPACES_THEN_IDENTIFIER) > spaceCount) {
-            create(`space`, null);
-          }
-        }
       } else if (matchesRegex(NUMBER)) {
         create(`numberliteral`);
       } else if (matches(`=`)) {
@@ -153,6 +147,8 @@ module.exports = input => {
         create(`colon`);
       } else if (matches(`,`)) {
         create(`comma`);
+      } else if (matches(`*`)) {
+        create(`asterisk`);
       } else {
         throw new Error(`cannot lex at position ${lexer.eatenInput.length}, starting here "${lexer.input}"`);
       }
