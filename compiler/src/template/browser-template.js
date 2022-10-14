@@ -3,7 +3,13 @@
 // Object/Properties ===============================
 
 const stringDefaultProps = {
-  h1: "innerText"
+  h1: "innerText",
+  text: "innerText",
+};
+
+
+const fnDefaultProps = {
+  text: "onInput",
 };
 
 /*
@@ -456,13 +462,16 @@ bs.httpGet = url => {
 bs.tag = (tagType, expressions, props, children) => {
   for (let expression of expressions) {
     const expressionType = typeof expression;
+    let prop = null;
     if (expressionType === "string") {
-      const prop = stringDefaultProps[tagType];
-      if (prop) {
-        props[prop] = expression;
-      } else {
-        throw new Error("tag \"" + tagType + "\" does not have a default property for anonymous expression of type \"" + expressionType + "\"");
-      }
+      prop = stringDefaultProps[tagType];
+    } else if (expressionType === "function") {
+      prop = fnDefaultProps[tagType];
+    }
+    if (prop) {
+      props[prop] = expression;
+    } else {
+      throw new Error("tag \"" + tagType + "\" does not have a default property for anonymous expression of type \"" + expressionType + "\"");
     }
   }
   let innerText = "";

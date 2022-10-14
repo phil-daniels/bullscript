@@ -10,11 +10,12 @@ module.exports = tokens => {
   const eatRequired = parser.eatRequired.bind(parser);
   const eatValueRequired = parser.eatValueRequired.bind(parser);
   const skipRequired = parser.skipRequired.bind(parser);
+  const asString = parser.asString.bind(parser);
 
   let isComponent = false;
   if (is(`identifier`) && isValue(`component`)) {
     isComponent = true;
-    skip();
+    skip(2); // `component` statementend
   }
   const {browser, server, serverInit} = generateBlockContents(isComponent); // keep only the js
   return {browser, server, serverInit};
@@ -61,12 +62,12 @@ module.exports = tokens => {
     } else if (is(`colon`)) {
       return generateTagInstantiationCode();
     } else {
-      throw new Error();
+      throw new Error(asString());
     }
   }
 
   function generateStateDeclarationCode() {
-    skip(2); // `state`, ` `
+    skip(); // `state`
     const name = eatValue();
     skip(); // `=`
     const expression = generateExpression();
@@ -82,9 +83,6 @@ module.exports = tokens => {
 
   function generateTagInstantiationCode() {
     skip(); // `:`
-    function createTwoWayBindingArg(name) {
-      return `${}`;
-    }
     const tagType = eatValue();
     const expressions = [];
     while (!eof() && !is(`statementend`, `curlystart`)) {
@@ -192,15 +190,6 @@ module.exports = tokens => {
     skip(); // `]`
 
     return `[${expressions.join(",")}]`;
-  }
-
-  function generateTwoWayBinding(mode) {
-    if (![`param`, `arg`].includes(mode)) throw new Error(mode);
-    skipRequired(`asterisk`);
-    const name = eatValue(`identifier`);
-
-    return mode === `param`
-        ? ``
   }
 
   function code(browser = ``, server = ``, serverInit = ``, database = ``, browserBlockVars = [],

@@ -11,7 +11,7 @@ module.exports = input => {
       return tokenTypes.includes(this.input[0]?.tokenType);
     },
     isValue: function(...values) {
-      return values.includes(this.input[0]?.values);
+      return values.includes(this.input[0]?.value);
     },
     skip: function(num = 1) {
       for (let i = 0; i < num; i++) {
@@ -41,5 +41,8 @@ module.exports = input => {
       if (this.is(tokenType)) this.skip();
       else throw new Error(`expecting ${tokenType}`);
     },
+    asString: function() {
+      return JSON.stringify(this.input[0]);
+    }
   };
 }
