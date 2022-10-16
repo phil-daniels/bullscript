@@ -39,8 +39,8 @@ route "/todos" && auth.isLoggedIn
    :input *newTodoLabel {type: "text", onEnter: add}
    for (todo in todos)
       :div if (todo.completed) .completed {onClick: -> markComplete(todo)}
-         todo.label
-         .btn.danger "Delete" {onClick: -> remove(todo)}
+         "{todo.label}"
+         :button.btn.danger "Delete" {onClick: -> remove(todo)}
 
 route auth.loginRoute
 

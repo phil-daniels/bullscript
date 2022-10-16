@@ -42,7 +42,7 @@ module.exports = tokens => {
       blockCode[type] = `
         ${isComponent ? `return bs.children($children => {` : ``}
         ${blockVars.length > 0 ? `let ${blockVars.join(`,`)};` : ``};
-        ${!isComponent ? `() => ` : ``}bs.pipe(
+        ${!isComponent ? `() => ` : ``}bs.pipe(null,
         ${blockCode[type]}
         )
         ${isComponent ? `});` : ``}

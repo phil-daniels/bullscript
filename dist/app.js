@@ -41,12 +41,15 @@ appHtml = `
 
 const stringDefaultProps = {
   h1: "innerText",
-  text: "innerText",
+  input: "innerText",
 };
 
-
 const fnDefaultProps = {
-  text: "onInput",
+  input: "onInput",
+};
+
+// If an anonymous tag expression of undefined or null is passed, what to we convert it to (missing are treated as null)
+const defaultMissingProps = {
 };
 
 /*
@@ -58,6 +61,7 @@ event ==> call react setter
 bs.state = (name, setter, initialValue) => {
   const stateObj = React.useRef(new bs.State(name, setter, initialValue)).current;
   stateObj.reactSetter = React.useState(stateObj.$immObj);
+  setter(initialValue);
   return stateObj;
 }
 
@@ -500,19 +504,27 @@ bs.tag = (tagType, expressions, props, children) => {
   for (let expression of expressions) {
     const expressionType = typeof expression;
     let prop = null;
+    let handled = false;
     if (expressionType === "string") {
+      handled = true;
       prop = stringDefaultProps[tagType];
     } else if (expressionType === "function") {
+      handled = true;
       prop = fnDefaultProps[tagType];
+    } else if (expression === null || typeof expression === "undefined") {
+      handled = true;
+      prop = defaultMissingProps[tagType];
     }
-    if (prop) {
-      props[prop] = expression;
+    if (handled) {
+      if (prop) {
+        props[prop] = expression;
+      }
     } else {
       throw new Error("tag \\"" + tagType + "\\" does not have a default property for anonymous expression of type \\"" + expressionType + "\\"");
     }
   }
-  let innerText = "";
-  if (props.innerText) {
+  let innerText = null;
+  if (props.innerText !== null && typeof props.innerText !== undefined) {
     innerText = props.innerText;
     delete props.innerText;
   }
@@ -530,6 +542,7 @@ const $main$component$bs = function($props) {
     let newTodoLabel, $state_newTodoLabel, todos, $state_todos;
     ;
     bs.pipe(
+      null,
       () => $state_newTodoLabel = bs.state("newTodoLabel", ($) => newTodoLabel = $, ""),
       () => $state_todos = bs.state("todos", ($) => todos = $, []),
       () => {
