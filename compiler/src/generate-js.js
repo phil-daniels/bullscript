@@ -1,11 +1,31 @@
 const createParser = require(`./create-parser`);
 
+const IDENTIFIER = /^[a-zA-Z_][a-zA-Z_0-9]*/;
+
+const Mode = {
+  BROWSER: `browser`,
+  SERVER: `server`,
+  SERVER_INIT: `serverInit`,
+  DATABASE: `database`,
+};
+
+const Context = {
+  COMPONENT: `component`,
+  FUNCTION: `function`,
+};
+
+const jsKeywordsToEscape = [
+  `delete`
+];
+
 module.exports = tokens => {
   const parser = createParser(tokens);
   const eof = parser.eof.bind(parser);
   const is = parser.is.bind(parser);
   const isValue = parser.isValue.bind(parser);
+  const isAhead = parser.isAhead.bind(parser);
   const skip = parser.skip.bind(parser);
+  const eat = parser.eat.bind(parser);
   const eatValue = parser.eatValue.bind(parser);
   const eatRequired = parser.eatRequired.bind(parser);
   const eatValueRequired = parser.eatValueRequired.bind(parser);
@@ -13,27 +33,39 @@ module.exports = tokens => {
   const asString = parser.asString.bind(parser);
 
   let isComponent = false;
+  let defaultMode = Mode.BROWSER;
+  let context = null; // track whether component parent or function parent is closer
+
   if (is(`identifier`) && isValue(`component`)) {
     isComponent = true;
     skip(2); // `component` statementend
+    context = Context.COMPONENT;
   }
-  const {browser, server, serverInit} = generateBlockContents(isComponent); // keep only the js
+  const {browser, server, serverInit} = generateBlockContents(); // keep only the js
   return {browser, server, serverInit};
 
-  function generateBlockContents(isComponent) {
+  function generateBlockContents(...terminators) {
     parser;
     const blockCode = code();
-    while (!eof()) {
-      const statementCode = generateStatementCode();
-      statementCode.prependIfExists(`browser`, `() => `);
-      statementCode.prependIfExists(`server`, `() => `);
-      statementCode.prependIfExists(`serverInit`, `() => `);
+    let terminated = false;
+    while (!eof() && !terminated) {
+      const statementCode = generateStatement();
+      statementCode.prependIfExists(`browser`, `$ => `);
+      statementCode.prependIfExists(`server`, `$ => `);
+      statementCode.prependIfExists(`serverInit`, `$ => `);
       statementCode.appendIfExists(`browser`, `,`);
       statementCode.appendIfExists(`server`, `,`);
       statementCode.appendIfExists(`serverInit`, `,`);
       blockCode.append(statementCode);
-      if (!is(`statementend`)) throw new Error();
+      if (!is(`statementend`)) {
+        die(`expected statement end`);
+      }
+      if (terminators.some(x => is(x))) {
+        terminated = true;
+        break;
+      }
       skip(); // `statementend`
+      if (terminators.some(x => is(x))) terminated = true;
     }
 
     function buildBlock(blockCode, type) {
@@ -41,8 +73,8 @@ module.exports = tokens => {
       if (!blockCode[type] && blockVars.length === 0) return;
       blockCode[type] = `
         ${isComponent ? `return bs.children($children => {` : ``}
-        ${blockVars.length > 0 ? `let ${blockVars.join(`,`)};` : ``};
-        ${!isComponent ? `() => ` : ``}bs.pipe(null,
+        ${blockVars.length > 0 ? `let ${blockVars.join(`,`)};` : ``}
+        ${!isComponent ? `return ` : ``}bs.pipe($,
         ${blockCode[type]}
         )
         ${isComponent ? `});` : ``}
@@ -55,115 +87,317 @@ module.exports = tokens => {
     return blockCode;
   }
 
-  function generateStatementCode() {
+  function generateBlock() {
+    let result;
+    if (is(`blockstart`)) {
+      skip(); // blockstart
+      withComponentStatus(false, () => {
+        result = generateBlockContents(`blockend`);
+      });
+      skip(); // blockend
+    } else {
+      withComponentStatus(false, () => {
+        result = generateBlockContents(`statementend`, `blockend`);
+      });
+    }
+    return result;
+  }
+
+  function generateStatement() {
     parser;
     if (isValue(`state`)) {
-      return generateStateDeclarationCode();
+      return generateStateDeclaration();
     } else if (is(`colon`)) {
-      return generateTagInstantiationCode();
+      return generateTagInstantiation();
+    } else if (is(`identifier`)) {
+      if (isValue(`fn`)) {
+        return generateFunctionDeclaration();
+      } else if (isValue(`for`)) {
+        return generateForLoopStatement();
+      } else {
+        return generateExpressionBasedStatement();
+      }
+    }
+    die(`could not make statement`);
+  }
+
+  function generateForLoopStatement() {
+    skipRequired(`identifier`); // for
+    skipRequired(`parenstart`);
+    const nameExpression = generateParam();
+    skipRequired(`identifier`); // in
+    const collectionExpression = generateExpression();
+    skipRequired(`parenend`);
+    const body = generateBlock();
+
+    return defaultCode(`bs.for($, `, collectionExpression, `, `, nameExpression, ` => {`, body, `})`);
+  }
+
+  function generateExpressionBasedStatement() {
+    const expressionAst = parseExpression();
+    if (is(`plus`) && isAhead(`equals`)) {
+      return generateAppendStatement(writeExpression(expressionAst));
+    } else if (is(`equals`)) {
+      return generateAssignmentStatement(expressionAst);
     } else {
-      throw new Error(asString());
+      const expression = writeExpression(expressionAst);
+      if (context === Context.COMPONENT) {
+        return defaultCode(`$children.push(bs.tag("span", [`, expression, `]))`);
+      } else {
+        return expression;
+      }
     }
   }
 
-  function generateStateDeclarationCode() {
+  function generateAssignmentStatement(nameExpressionAst) {
+    const nameValue = nameExpressionAst.value;
+    const memberCallExpressions = nameExpressionAst.memberCallExpressions;
+    const isSimpleVar = memberCallExpressions.length === 0
+        && IDENTIFIER.test(nameValue);
+    skipRequired(`equals`);
+    const valueExpression = generateExpression();
+
+    if (isSimpleVar) {
+      return defaultCode(`$state_${nameValue}.assign(`, valueExpression, `)`);
+    } else {
+      const allButLast = memberCallExpressions.slice(0, memberCallExpressions.length - 1);
+      const allExpressionsButLast = writeExpression({value: nameValue, memberCallExpressions: allButLast});
+      const last = memberCallExpressions[memberCallExpressions.length - 1].value;
+      return defaultCode(allExpressionsButLast, `.$set("${last}",`, valueExpression, `)`);
+    }
+  }
+
+  function generateAppendStatement(subject) {
+    skipRequired(`plus`);
+    skipRequired(`equals`);
+    const expression = generateExpression();
+
+    return defaultCode(`bs.append(`, subject, `,`, expression, `)`);
+  }
+
+  function generateStateDeclaration() {
+    if (defaultMode !== Mode.BROWSER) throw new Error(defaultMode);
     skip(); // `state`
     const name = eatValue();
     skip(); // `=`
     const expression = generateExpression();
 
-    return code(
-      `$state_${name} = bs.state("${name}", $ => ${name} = $, ${expression})`,
-      ``,
-      ``,
-      ``,
-      [name, `$state_${name}`],
+    return browserCode(
+      `$state_${name} = bs.state("${name}", $ => ${name} = $, `, expression, `)`,
+      [name, `$state_${name}`]
     );
   }
 
-  function generateTagInstantiationCode() {
+  function generateTagInstantiation() {
+    if (defaultMode !== Mode.BROWSER) throw new Error(defaultMode);
     skip(); // `:`
     const tagType = eatValue();
-    const expressions = [];
-    while (!eof() && !is(`statementend`, `curlystart`)) {
+    let unnamedExpressions = code();
+    let namedExpressions = code();
+    let first = true;
+    while (!is(`statementend`) && !is(`blockstart`) && !is(`blockend`)) {
+      if (first) first = false;
+      else skipRequired(`comma`);
+      let name;
+      if (is(`identifier`) && isAhead(`colon`)) {
+        name = eatValue(`identifier`);
+        skipRequired(`colon`);
+      }
+      let isTwoWayBinding = false;
       if (is(`asterisk`)) {
         skip(); // `*`
-        const name = eatValue(`identifier`);
-        expressions.push(name);
-        expressions.push(`$v => ${name} = $v`);
-      } else {
-        expressions.push(generateExpression());
+        isTwoWayBinding = true;
       }
-    }
-    const expressionObj = `{}`;
-    if (is(`curlystart`)) {
-      skipRequired(`curlystart`); // `{`
-      let first = true;
-      const props = {};
-      while (first || is(`comma`)) {
-        first = false;
-        while (is(`comma`)) skip();
-        const prop = eatValueRequired(`identifier`);
-        skipRequired(`colon`);
-        if (is(`*`)) {
-          skip(); // `*`
-          const name = eatValue(`identifier`);
-          expressions.push(`${prop}:${name}`);
-          expressions.push(`on${prop}Change:$v => ${name} = $v`);
+      const isSimpleVarRef = is(`identifier`) && !(isAhead(`dot`) || isAhead(`parenstart`) || isAhead(`bracketstart`));
+      const value = generateExpression();
+      if (isTwoWayBinding) {
+        let assignmentStr = code();
+        if (isSimpleVarRef) {
+          assignmentStr.append(browserCode(`$state_`, value, `.assign($v)`));
+        } else { // simple variable ref
+          assignmentStr.append(browserCode(value, `=$v`));
+        }
+        if (name) {
+          namedExpressions.append(browserCode(`${name}:`, value, `,on${name}Change:$v => `, assignmentStr, `,`));
         } else {
-          const value = generateExpression();
-          props[prop] = value;
+          unnamedExpressions.append(browserCode(value, `,$v => `, assignmentStr, `,`));
+        }
+      } else {
+        if (name) {
+          namedExpressions.append(browserCode(`${name}:`, value, `,`));
+        } else {
+          unnamedExpressions.append(browserCode(value, `,`));
         }
       }
-      skipRequired(`curlyend`); // `}`
-      expressionObj = `{${Object.keys(props).map(key => `${key}:${props[key]}`).join(`,`)}}`;
     }
     let children = "";
     if (is(`blockstart`)) {
       skip();
-      children = generateBlockContents();
+      withContext(Context.COMPONENT, () => {
+        children = generateBlockContents(`blockend`);
+      });
       skip(); // `blockend`
     }
 
-    return code(
-      `{
-        $children.push(bs.tag("${tagType}",[${expressions.join(`,`)}],${expressionObj}${children ? `,${children}` : ``}));
-      }`,
-      ``,
-      ``,
-      ``,
-    );
+    return browserCode(`{
+      $children.push(bs.tag("${tagType}",[`, unnamedExpressions, `],{`, namedExpressions, `}`, ...(children ? [`,`, `((() => {const $children = [];(()=>{`, children, `})();return $children;})())`] : []), `));
+    }`);
   }
 
-  function generateTagInstantiationObjectLiteral() {
-    skipRequired(`curlystart`); // `{`
-    let first = true;
-    const props = {};
-    while (first || is(`comma`)) {
-      first = false;
-      while (is(`comma`)) skip();
-      const prop = eatValueRequired(`identifier`);
-      skipRequired(`colon`);
-      const value = generateExpression();
-      props[prop] = value;
-    }
-    skipRequired(`curlyend`); // `}`
+  function generateFunctionDeclaration() {
+    if (!is(`identifier`) || !isValue(`fn`)) die(`expected "fn"`);
+    skip(); // `fn`
+    const name = escapeJsKeywords(eatValueRequired(`identifier`));
+    const expression = generateFunctionExpression();
     
-    return `{${Object.keys(props).map(key => `${key}:${props[key]}`).join(`,`)}}`;
+    return defaultCode(`${name} = `, expression, [name]);
+  }
+
+  function parseExpression() {
+    const value = generateExpressionValue();
+    let memberCallExpressions = [];
+    while (true) {
+      if (is(`dot`)) {
+        skip(); // `.`
+        const prop = eatValueRequired(`identifier`);
+        memberCallExpressions.push({type: `member`, value: prop});
+      } else if (is(`parenstart`)) {
+        memberCallExpressions.push({type: `paren`, value: generateParenExpression()});
+      } else if (is(`bracketstart`)) {
+        memberCallExpressions.push({type: `list`, value: generateListExpression()});
+      } else {
+        break;
+      }
+      first = false;
+    }
+
+    return {value, memberCallExpressions};
+  }
+
+  function generateExpression() {
+    const expressionAst = parseExpression();
+    return writeExpression(expressionAst);
+  }
+
+  function writeExpression(expressionAst) {
+    let memberCallExpressions = [];
+    for (const memberCallExpressionAst of expressionAst.memberCallExpressions) {
+      if (memberCallExpressionAst.type === `member`) {
+        memberCallExpressions.push(defaultCode(`.$get("${memberCallExpressionAst.value}")`));
+      } else if (memberCallExpressionAst.type === `paren`) {
+        memberCallExpressions.push(memberCallExpressionAst.value);
+      } else if (memberCallExpressionAst.type === `list`) {
+        memberCallExpressions.push(memberCallExpressionAst.value);
+      } else {
+        break;
+      }
+      first = false;
+    }
+
+    return defaultCode(expressionAst.value, ...memberCallExpressions);
+  }
+
+  function generateFunctionExpression(paramExpression = `()`) {
+    if (is(`parenstart`)) {
+      if (paramExpression !== `()`) die(`expected hyphen`);
+      paramExpression = generateParameterList()
+    }
+    skipRequired(`dash`);
+    skipRequired(`greaterthan`);
+    let fnBody;
+    withContext(Context.FUNCTION, () => {
+      fnBody = generateBlock();
+    });
+
+    return defaultCode(paramExpression, `=>{`, fnBody, `}`);
+  }
+
+  function generateParam() {
+    const name = eatValueRequired(`identifier`); // TODO support destructuring, etc
+
+    return defaultCode(name);
+  }
+
+  function generateParameterList() {
+    const params = [];
+    skipRequired(`parenstart`);
+    let first = true;
+    while (!eof() && !is(`parenend`)) {
+      if (first) {
+        first = false;
+      } else {
+        skipRequired(`comma`);
+        params.push(`,`);
+      }
+      const param = generateParam();
+      params.push(param);
+    }
+    skipRequired(`parenend`);
+
+    return defaultCode(`(`, ...params, `)`);
   }
   
-  function generateExpression() {
+  function generateExpressionValue() {
     if (is(`stringstart`)) {
       return generateStringExpression();
     } else if (is(`bracketstart`)) {
       return generateListExpression();
+    } else if (is(`identifier`)) {
+      if (isValue(`style`)) {
+        !!!!!!!!!!!!! parse like string
+      } else if (isAhead(`dash`) && isAhead(`greaterthan`, 2)) {
+        const argName = eatValue();
+        return generateFunctionExpression(argName);
+      }
+      return escapeJsKeywords(eatValue());
+    } else if (is(`dash`)) {
+      if (isAhead(`greaterthan`)) {
+        return generateFunctionExpression();
+      }
+    } else if (is(`parenstart`)) {
+      return generatedParenBasedExpression();
+    } else if (is(`curlystart`)) {
+      return generatedObjectExpression();
+    }
+    throw new Error(`expected expression value`);
+  }
+
+  function generatedObjectExpression() {
+    skipRequired(`curlystart`);
+    let first = true;
+    const result = defaultCode(`bs.obj({`);
+    while (!eof() && (first || is(`comma`))) {
+      let prop = ``;
+      if (first) {
+        first = false;
+      } else {
+        skip(); // comma
+        prop += `,`;
+      }
+      const name = eatValueRequired(`identifier`);
+      skipRequired(`colon`);
+      prop += `${name}:`;
+      const value = generateExpression();
+
+      result.append(defaultCode(prop, value));
+    }
+    skipRequired(`curlyend`);
+    result.append(defaultCode(`})`));
+
+    return result;
+  }
+
+  function generatedParenBasedExpression() {
+    const parenExpression = generateParenExpression();
+    if (is(`dash`) && isAhead(`greaterthan`)) {
+      return generateFunctionExpression(parenExpression);
     }
   }
 
   function generateStringExpression() {
     const pieces = [];
     skip(); // `"`
-    while (!eof() && (is(`stringliteral`) || is(`stringcodeblock`))) {
+    while (!eof() && (is(`stringliteral`) || is(`stringcodeblockstart`))) {
       if (is(`stringliteral`)) {
         pieces.push(eatValue());
       } else {
@@ -172,7 +406,7 @@ module.exports = tokens => {
     }
     skip(); // `"`
 
-    return `"${pieces.join("")}"`;
+    return defaultCode(`"${pieces.join("")}"`);
   }
 
   function generateListExpression() {
@@ -189,7 +423,27 @@ module.exports = tokens => {
     }
     skip(); // `]`
 
-    return `[${expressions.join(",")}]`;
+    return `bs.arr(${expressions.join(",")})`;
+  }
+
+  function generateParenExpression() {
+    const expressions = [];
+    skip(); // `(`
+    let first = true;
+    while (!eof() && !is(`parenend`)) {
+      if (first) {
+        first = false;
+      } else {
+        if (!is(`comma`)) throw new Error(`expecting comma`);
+        skip();
+        expressions.push(`,`);
+      }
+      const expression = generateExpression();
+      expressions.push(expression);
+    }
+    skip(); // `)`
+
+    return defaultCode(`(`, ...expressions, `)`);
   }
 
   function code(browser = ``, server = ``, serverInit = ``, database = ``, browserBlockVars = [],
@@ -222,9 +476,81 @@ module.exports = tokens => {
     };
   }
 
+  function defaultCode(...args) {
+    return buildCode(defaultMode, args);
+  }
+
+  function browserCode(...args) {
+    return buildCode(Mode.BROWSER, args);
+  }
+
+  function serverCode(...args) {
+    return buildCode(Mode.SERVER, args);
+  }
+
+  function serverInitCode(...args) {
+    return buildCode(Mode.SERVER_INIT, args);
+  }
+
+  function databaseCode(...args) {
+    return buildCode(Mode.DATABASE, args);
+  }
+
+  function buildCode(mode, values) {
+    const myCode = code();
+    for (let value of values) {
+      if (typeof value === `string`) {
+        myCode[mode] += value;
+      } else if (Array.isArray(value)) {
+        pushAll(myCode[`${mode}BlockVars`], value);
+      } else {
+        myCode.append(value);
+      }
+    }
+    return myCode;
+  }
+
+  function withComponentStatus(newIsComponent, fn) {
+    const savedIsComponent = isComponent;
+    isComponent = newIsComponent;
+    const result = fn();
+    isComponent = savedIsComponent;
+    return result;
+  }
+
+  function withContext(newContext, fn) {
+    const savedContext = context;
+    context = newContext;
+    const result = fn();
+    context = savedContext;
+    return result;
+  }
+
+  function whileDelimited(delimiter, blockFn) {
+    return whileFirstOr(is(delimiter), blockFn);
+  }
+
+  function whileFirstOr(predicateFn, blockFn) {
+    let first = true;
+    while (!eof() && (first || predicateFn())) {
+      first = false;
+      blockFn();
+    }
+  }
+
   function pushAll(arr, items) {
     for (let item of items) {
       arr.push(item);
     }
+  }
+
+  function die(msg) {
+    throw {msg, position: parser.eatenInput[parser.eatenInput.length - 1]?.position || 0, type: `PARSING`};
+  }
+
+  function escapeJsKeywords(value) {
+    if (!value) return value;
+    if (jsKeywordsToEscape.includes(value)) return `$_${value}`;
+    else return value;
   }
 };

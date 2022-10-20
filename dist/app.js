@@ -39,52 +39,12 @@ appHtml = `
 
 // Object/Properties ===============================
 
-const stringDefaultProps = {
-  h1: "innerText",
-  input: "innerText",
-};
-
-const fnDefaultProps = {
-  input: "onInput",
-};
-
-// If an anonymous tag expression of undefined or null is passed, what to we convert it to (missing are treated as null)
-const defaultMissingProps = {
-};
-
-/*
-
-arr react setters ==> react dom
-event ==> call react setter
-*/
-
 bs.state = (name, setter, initialValue) => {
-  const stateObj = React.useRef(new bs.State(name, setter, initialValue)).current;
-  stateObj.reactSetter = React.useState(stateObj.$immObj);
-  setter(initialValue);
+  const stateObj = React.useRef(new bs.State(name, setter)).current;
+  stateObj.reactSetter = React.useState(() => { stateObj.init(initialValue) ; return stateObj.$immObj })[1];
+  setter(stateObj.ref);
   return stateObj;
 }
-
-// bs.component = () => {
-//   return {
-//     stateObjs: [],
-//     initState: function(prop, setter, obj) {
-//       const stateObj = new bs.State(prop, setter);
-//       stateObj.init(obj);
-//       this.stateObjs
-//     },
-//   };
-// };
-
-// bs.initState = (prop, setter, obj) => {
-//   if (bs.isPrimitive(obj)) return obj;
-//   const stateObj = new bs.State(prop, setter);
-//   stateObj.init(obj);
-//   const stateId = lastStateId++;
-//   stateIndex[stateId] = stateObj;
-//   obj.$immObj.$stateId = stateId;
-//   return obj.$immObj;
-// }
 
 bs.getUserEntries = (obj) => {
   return Object.entries(obj).filter(x => !x[0].startsWith("$"));
@@ -99,10 +59,9 @@ bs.getUserProperties = (obj) => {
 }
 
 bs.State = class State {
-  constructor(prop, setter, ref) {
+  constructor(prop, setter) {
     this.prop = prop;
     this.setter = setter;
-    this.ref = ref;
     this.$listeners = [];
     this.$triggerUpdate = this.$triggerUpdate.bind(this);
     this.$triggerUpdate.state = this;
@@ -124,6 +83,7 @@ bs.State = class State {
   init(obj) {
     this.ref = obj;
     if (!bs.isPrimitive(obj)) obj.$addListener(this);
+    return obj;
   }
 
   assign(obj) {
@@ -137,7 +97,7 @@ bs.State = class State {
   }
 
   $triggerUpdate() {
-    this.reactSetter(this.ref.$immObj);
+    this.reactSetter(bs.isPrimitive(this.ref) ? this.ref : this.ref.$immObj);
   }
 }
 
@@ -216,6 +176,9 @@ bs.BsArray = class BsArray extends Array {
   constructor(arr) {
     super();
     this.$init(arr);
+    this.add = this.add.bind(this);
+    this.remove = this.remove.bind(this);
+    this.removeIndex = this.removeIndex.bind(this);
   }
 
   $createBaseObj() {
@@ -229,8 +192,7 @@ bs.BsArray = class BsArray extends Array {
       if (!bs.isPrimitive(item)) {
         item.$addListener(this);
       }
-      const newImmObj = [...this.$immObj, item];
-      this.$immObj = bs.transferMeta(this.$immObj, newImmObj);
+      this.$immObj = [...this.$immObj, item];
       this.$triggerUpdate();
     }
   }
@@ -254,7 +216,7 @@ bs.BsArray = class BsArray extends Array {
           newImmObj.push(item);
         }
       }
-      this.$immObj = bs.transferMeta(this.$immObj, newImmObj);
+      this.$immObj = newImmObj;
       this.$triggerUpdate();
     }
   }
@@ -263,13 +225,17 @@ bs.BsArray = class BsArray extends Array {
 Object.assign(bs.BsObject.prototype, ObjectMixin);
 Object.assign(bs.BsArray.prototype, ObjectMixin);
 
+bs.append = (subject, item) => {
+  if (Array.isArray(subject)) {
+    subject.add(item);
+  } else if (typeof subject === "string") {
+    subject += item;
+  }
+  return subject;
+};
+
 bs.isPrimitive = (obj) => {
   return !Array.isArray(obj) && typeof obj !== "object";
-}
-
-bs.transferMeta = (oldImmObj, newImmObj) => {
-  newImmObj.$objId = oldImmObj.$objId;
-  return newImmObj;
 }
 
 bs.arr = (...items) => {
@@ -452,7 +418,7 @@ bs.for = (value, list, fn) => {
   let index = 0;
   return bs.while(value,
     $ => index < list.length,
-    $ => bs.pipe($, ...fn(list[index])),
+    $ => fn(list[index]),
     $ => {
       index++;
       return $;
@@ -500,57 +466,125 @@ bs.httpGet = url => {
   });
 }
 
-bs.tag = (tagType, expressions, props, children) => {
-  for (let expression of expressions) {
+bs.tag = (tagType, expressions, props = {}, children = []) => {
+  for (const expression of expressions) {
     const expressionType = typeof expression;
-    let prop = null;
-    let handled = false;
-    if (expressionType === "string") {
-      handled = true;
-      prop = stringDefaultProps[tagType];
-    } else if (expressionType === "function") {
-      handled = true;
-      prop = fnDefaultProps[tagType];
-    } else if (expression === null || typeof expression === "undefined") {
-      handled = true;
-      prop = defaultMissingProps[tagType];
-    }
-    if (handled) {
-      if (prop) {
-        props[prop] = expression;
-      }
-    } else {
-      throw new Error("tag \\"" + tagType + "\\" does not have a default property for anonymous expression of type \\"" + expressionType + "\\"");
-    }
+    resolveTagAnonymousExpression(expression, expressionType, props, tagType, children);
   }
-  let innerText = null;
-  if (props.innerText !== null && typeof props.innerText !== undefined) {
-    innerText = props.innerText;
-    delete props.innerText;
+  for (const [name, value] of Object.entries(props)) {
+    const valueType = typeof value;
+    delete props[name];
+    applyTagProperties(name, value, valueType, props, tagType, children);
   }
-  return React.createElement(tagType, props, innerText, children);
+  return React.createElement(tagType, props, ...children);
 };
+
+function resolveTagAnonymousExpression(expression, expressionType, props, tagType, children) {
+  let prop;
+  let value = expression;
+  if (tagType === \`input\`) {
+    if (expressionType === "string") {
+      prop = \`value\`;
+    } else if (expressionType === "function") {
+      prop = \`onInput\`;
+      const fn = value;
+      value = e => fn(e.target.value);
+    }
+  } else if (expressionType === "string") {
+    prop = \`innerText\`;
+  } else {
+    throw new Error("tag \\"" + tagType + "\\" does not have a default property for anonymous expression of type \\"" + expressionType + "\\"");
+  }
+  if (prop === "innerText") {
+    children.push(value);
+  } else {
+    props[prop] = value;
+  }
+}
+
+function applyTagProperties(key, value, valueType, props, tagType, children) {
+  if (key === \`onEnter\`) {
+    key = \`onKeyUp\`;
+    const origFn = value;
+    value = e => {
+      if (e.key === \`Enter\`) origFn();
+    };
+  }
+  props[key] = value;
+}
 
 bs.children = fn => {
   const children = [];
   fn(children);
-  return children.length === 1 ? children[0] : children;
+  return React.createElement(React.Fragment, null, ...children);
 };
 
 const $main$component$bs = function($props) {
+  let $ = null;
   return bs.children(($children) => {
-    let newTodoLabel, $state_newTodoLabel, todos, $state_todos;
-    ;
+    let newTodoLabel, $state_newTodoLabel, todos, $state_todos, add, $_delete, markComplete;
     bs.pipe(
-      null,
-      () => $state_newTodoLabel = bs.state("newTodoLabel", ($) => newTodoLabel = $, ""),
-      () => $state_todos = bs.state("todos", ($) => todos = $, []),
-      () => {
+      $,
+      ($2) => $state_newTodoLabel = bs.state("newTodoLabel", ($3) => newTodoLabel = $3, ""),
+      ($2) => $state_todos = bs.state("todos", ($3) => todos = $3, bs.arr()),
+      ($2) => add = () => {
+        return bs.pipe(
+          $2,
+          ($3) => $state_newTodoLabel.assign(""),
+          ($3) => bs.append(todos, bs.obj({ label: newTodoLabel, completed: false }))
+        );
+      },
+      ($2) => $_delete = (todo) => {
+        return bs.pipe(
+          $2,
+          ($3) => todos.$get("remove")(todo)
+        );
+      },
+      ($2) => markComplete = (todo) => {
+        return bs.pipe(
+          $2,
+          ($3) => todo.$set("completed", true)
+        );
+      },
+      ($2) => {
         $children.push(bs.tag("h1", ["todos"], {}));
       },
-      () => {
-        $children.push(bs.tag("input", [newTodoLabel, ($v) => newTodoLabel = $v], {}));
-      }
+      ($2) => {
+        $children.push(bs.tag("input", [newTodoLabel, ($v) => $state_newTodoLabel.assign($v)], { onEnter: add }));
+      },
+      ($2) => bs.for($2, todos, (todo) => {
+        return bs.pipe(
+          $2,
+          ($3) => {
+            $children.push(bs.tag("div", [], {}, (() => {
+              const $children2 = [];
+              (() => {
+                return bs.pipe(
+                  $3,
+                  ($4) => {
+                    $children2.push(bs.tag("button", ["Done"], { onClick: () => {
+                      return bs.pipe(
+                        $4,
+                        ($5) => markComplete(todo)
+                      );
+                    } }));
+                  },
+                  ($4) => $children2.push(bs.tag("span", [todo.$get("label")])),
+                  ($4) => {
+                    $children2.push(bs.tag("button", ["X"], { onClick: () => {
+                      return bs.pipe(
+                        $4,
+                        ($5) => $_delete(todo)
+                      );
+                    } }));
+                  }
+                );
+              })();
+              return $children2;
+            })()));
+          }
+        );
+      })
     );
   });
 };

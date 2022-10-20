@@ -11,7 +11,7 @@ const NUMBER = /^[0-9]+/
 const BOUNDRIES = [`\``, `"`, `(`, `)`, `{`, `}`, '[', `]`, `/*`];
 
 module.exports = input => {
-  const lexer = createLexer(input.replaceAll(`\r\n`, `\n`));
+  const lexer = createLexer(input);
   const is = lexer.is.bind(lexer);
   const eof = lexer.eof.bind(lexer);
   const matches = lexer.matches.bind(lexer);
@@ -23,24 +23,25 @@ module.exports = input => {
   const eat = lexer.eat.bind(lexer);
 
   while (!eof()) {
-    convertIndent(-3, null);
+    convertIndent(-3, null); // start at negative 1 indent
   }
   return lexer.output;
 
   function convertIndent(parentIndent, terminators = [`}`, `)`, `]`]) {
-    lexer; // TODO remove, doesn't show up in debugger if not used
+    lexer;
     const myIndent = parentIndent + 3;
     let deindent = false;
     const startOutputCount = lexer.output.length;
     while (!eof() && (!terminators || !is(...terminators)) && !deindent) {
       let preStatementOutputCount = lexer.output.length;
-      while(!eof() && !is(`\n`)) {
-        lexUntil(`\n`, ...BOUNDRIES);
-        if (!is(`\n`)) {
+      while(!eof() && !is(`\n`)&& !is(`\r\n`)) {
+        lexUntil(`\r\n`, `\n`, ...BOUNDRIES);
+        if (!is(`\n`) && !is(`\r\n`)) {
           lexAtBoundry();
         }
       }
       if (!eof()) {
+        if (is(`\r`)) skip();
         skip(); // newline
         if (lexer.output.length > preStatementOutputCount) {
           const indent = regexLength(SPACES);
@@ -49,11 +50,13 @@ module.exports = input => {
           } else if (indent === myIndent + 3) {
             create(`blockstart`);
             convertIndent(myIndent);
-            create(`blockend`, `statementend`);
-          } else if (index < myIndent && (index % 3 === 0)) {
+            create(`blockend`);
+            create(`statementend`);
+          } else if (indent < myIndent && (indent % 3 === 0)) {
+            create(`statementend`);
             deindent = true;
           } else {
-            throw new Error(`invalid indent`);
+            die(`invalid indent`);
           }
         } // else is blank line, ignore
       }
@@ -145,13 +148,27 @@ module.exports = input => {
         create(`equals`);
       } else if (matches(`:`)) {
         create(`colon`);
+      } else if (matches(`;`)) {
+        create(`semicolon`);
       } else if (matches(`,`)) {
         create(`comma`);
       } else if (matches(`*`)) {
         create(`asterisk`);
+      } else if (matches(`+`)) {
+        create(`plus`);
+      } else if (matches(`-`)) {
+        create(`dash`);
+      } else if (matches(`>`)) {
+        create(`greaterthan`);
+      } else if (matches(`.`)) {
+        create(`dot`);
       } else {
-        throw new Error(`cannot lex at position ${lexer.eatenInput.length}, starting here "${lexer.input}"`);
+        die(`I don't understand this character`);
       }
     }
+  }
+
+  function die(msg) {
+    throw {msg, position: lexer.eatenInput.length, type: `LEXING`};
   }
 };

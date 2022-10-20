@@ -30,13 +30,55 @@ function generateAppCode(files) {
   let appBrowserCode = "";
   for (const file of files) {
     const moduleName = `$${file.path.replaceAll(`/`, `_`).replaceAll(`.`, `$`)}`;
-    appBrowserCode += `const ${moduleName} = function($props) {`;
-    const tokens = lex(file.contents);
-    const {serverInit, serverRequest, browser} = generateJs(tokens);
-    appServerInitCode += serverInit;
-    appServerRequestCode += serverRequest;
-    appBrowserCode += browser;
+    appBrowserCode += `const ${moduleName} = function($props) {let $ = null;`;
+    let code;
+    try {
+      const tokens = lex(file.contents);
+      code = generateJs(tokens);
+    } catch(e) {
+      if (e instanceof Error) {
+        console.error(`UNEXPECTED ERROR OCURRED`);
+        console.error(e.stack);
+      } else {
+        writeError(file, e);
+      }
+      process.exit(1);
+    }
+    appServerInitCode += code.serverInit;
+    appServerRequestCode += code.serverRequest;
+    appBrowserCode += code.browser;
     appBrowserCode += `};`;
   }
   return {serverInitCode: appServerInitCode, serverRequestCode: appServerRequestCode, browserCode: appBrowserCode};
+}
+
+function writeError(file, error) {
+  console.error();
+  console.error();
+  console.error(`-- ${error.type} ERROR ------------------------------ ${file.name}`);
+  console.error();
+  console.error(error.msg);
+  console.error();
+  const lines = file.contents.split(`\n`);
+  let position = 0;
+  let startLineIndex = 0;
+  let endLineIndex = 0;
+  let columnNumber = 0;
+  let lineNumber = 0;
+  for (let line of lines) {
+    lineNumber++;
+    if (position + line.length < error.position) {
+      position += line.length + 1; // +1 for newline
+    } else {
+      startLineIndex = position;
+      endLineIndex = position + line.length;
+      columnNumber = error.position - position;
+      break;
+    }
+  }
+  const lineNumberWidth = (`` + lineNumber).length;
+  console.error(`${lineNumber} | ${file.contents.substring(startLineIndex, endLineIndex)}`);
+  console.error(`${``.padStart(lineNumberWidth)}   ${``.padStart(columnNumber)}^`);
+  console.error();
+  console.error();
 }

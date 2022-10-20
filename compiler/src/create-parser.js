@@ -1,13 +1,14 @@
 const tokenTypes = require(`./token-types`)
 
 module.exports = input => {
-  return {
+  const parser = {
     input,
     eatenInput: [],
     eof: function() {
       return this.input.length === 0;
     },
     is: function(...tokenTypes) {
+      tokenTypes.forEach(t => verify(t));
       return tokenTypes.includes(this.input[0]?.tokenType);
     },
     isValue: function(...values) {
@@ -30,19 +31,34 @@ module.exports = input => {
       return value;
     },
     eatRequired: function(tokenType) {
+      verify(tokenType);
       if (this.is(tokenType)) return this.eat();
-      else throw new Error(`expecting ${tokenType}`);
+      else die(`expecting ${tokenType}`);
     },
     eatValueRequired: function(tokenType) {
+      verify(tokenType);
       if (this.is(tokenType)) return this.eatValue();
-      else throw new Error(`expecting ${tokenType}`);
+      else die(`expecting ${tokenType}`);
     },
     skipRequired: function(tokenType) {
+      verify(tokenType);
       if (this.is(tokenType)) this.skip();
-      else throw new Error(`expecting ${tokenType}`);
+      else die(`expecting ${tokenType}`);
     },
     asString: function() {
       return JSON.stringify(this.input[0]);
-    }
+    },
+    isAhead: function(tokenType, num = 1) {
+      verify(tokenType);
+      return this.input.length <= this.num ? false : this.input[num].tokenType === tokenType;
+    },
   };
+  function die(msg) {
+    throw {msg, position: parser.eatenInput[parser.eatenInput.length - 1].position, type: `PARSING`};
+  }
+  return parser;
+}
+
+function verify(tokenType) {
+  if (!tokenTypes.includes(tokenType)) throw new Error(`"${tokenType}" is not a valid token type`);
 }

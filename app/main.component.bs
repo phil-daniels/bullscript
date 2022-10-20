@@ -3,8 +3,23 @@ component
 state newTodoLabel = ""
 state todos = []
 
+fn add() ->
+   newTodoLabel = ""
+   todos += {label: newTodoLabel, completed: false}
+
+fn delete(todo) ->
+   todos.remove(todo)
+
+fn markComplete(todo) ->
+   todo.completed = true
+
 :h1 "todos"
-:input *newTodoLabel
+:input *newTodoLabel, onEnter: add
+for (todo in todos)
+   :div
+      :button "Done", onClick: -> markComplete(todo)
+      todo.label style "text-decoration: underline"
+      :button "X", onClick: -> delete(todo)
 
 /*
 component
@@ -36,11 +51,11 @@ route "/todos" && auth.isLoggedIn
       delete todo ; component.refresh()
 
    :h1 "todos"
-   :input *newTodoLabel {type: "text", onEnter: add}
+   :input *newTodoLabel, type: "text", onEnter: add
    for (todo in todos)
-      :div if (todo.completed) .completed {onClick: -> markComplete(todo)}
+      :div if (todo.completed) .completed, onClick: -> markComplete(todo)
          "{todo.label}"
-         :button.btn.danger "Delete" {onClick: -> remove(todo)}
+         :button.btn.danger "Delete", onClick: -> remove(todo)
 
 route auth.loginRoute
 
