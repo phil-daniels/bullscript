@@ -344,7 +344,7 @@ module.exports = tokens => {
       return generateListExpression();
     } else if (is(`identifier`)) {
       if (isValue(`style`)) {
-        !!!!!!!!!!!!! parse like string
+        return generateStyleExpression();
       } else if (isAhead(`dash`) && isAhead(`greaterthan`, 2)) {
         const argName = eatValue();
         return generateFunctionExpression(argName);
@@ -360,6 +360,36 @@ module.exports = tokens => {
       return generatedObjectExpression();
     }
     throw new Error(`expected expression value`);
+  }
+
+  function generateStyleExpression() {
+    skipRequired(`identifier`); // style keyword
+    const styleString = generateStringExpression();
+
+    return defaultCode(`{style:${JSON.stringify(convertCssToJson(styleString))}}`);
+  }
+
+  function convertCssToJson(css) {
+    const cssObj = JSON.parse(css);
+    const newCssObj = {};
+    for (const [key, value] of Object.entries(cssObj)) {
+      let newKey = ``;
+      let wasDash = false;
+      for (const c of key.split("")) {
+        if (c === `-`) {
+          wasDash = true;
+        } else {
+          if (wasDash) {
+            newKey += c.toUpperCase();
+            wasDash = false;
+          } else {
+            newKey += c;
+          }
+        }
+      }
+      newCssObj[newKey] = value;
+    }
+    return newCssObj;
   }
 
   function generatedObjectExpression() {
