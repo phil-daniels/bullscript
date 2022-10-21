@@ -455,6 +455,9 @@ function resolveTagAnonymousExpression(expression, expressionType, props, tagTyp
     }
   } else if (expressionType === "string") {
     prop = `innerText`;
+  } else if (expression.style) {
+    prop = `style`;
+    value = expression.style;
   } else {
     throw new Error("tag \"" + tagType + "\" does not have a default property for anonymous expression of type \"" + expressionType + "\"");
   }

@@ -492,6 +492,9 @@ function resolveTagAnonymousExpression(expression, expressionType, props, tagTyp
     }
   } else if (expressionType === "string") {
     prop = \`innerText\`;
+  } else if (expression.style) {
+    prop = \`style\`;
+    value = expression.style;
   } else {
     throw new Error("tag \\"" + tagType + "\\" does not have a default property for anonymous expression of type \\"" + expressionType + "\\"");
   }
@@ -569,7 +572,7 @@ const $main$component$bs = function($props) {
                       );
                     } }));
                   },
-                  ($4) => $children2.push(bs.tag("span", [todo.$get("label")])),
+                  ($4) => $children2.push(bs.tag("span", [{ style: { "textDecoration": " line-through" } }, "" + todo.$get("label")], {})),
                   ($4) => {
                     $children2.push(bs.tag("button", ["X"], { onClick: () => {
                       return bs.pipe(

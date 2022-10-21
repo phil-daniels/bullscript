@@ -145,8 +145,7 @@ module.exports = tokens => {
       const expression = writeExpression(expressionAst);
       if (context === Context.COMPONENT) {
         const {unnamedExpressions, namedExpressions} = parseTagInstantiationProps();
-        unnamedExpressions.push(expression);
-        return defaultCode(`$children.push(bs.tag("span", [`, unnamedExpressions, `], {`, namedExpressions, `}))`);
+        return defaultCode(`$children.push(bs.tag("span", [`, unnamedExpressions, expression, `], {`, namedExpressions, `}))`);
       } else {
         return expression;
       }
@@ -381,22 +380,20 @@ module.exports = tokens => {
   }
 
   function convertCssToJson(css) {
-    if (css.startsWith(`"`)) css = css.substring(1);
-    if (css.endsWith(`"`)) css = css.substring(0, css.length - 1);
     let newCss = ``;
     while (true) {
-      const colonIndex = css.indexOf(`:`);
-      const semicolonIndex = css.indexOf(`;`);
+      let colonIndex = css.indexOf(`:`);
+      let semicolonIndex = css.indexOf(`;`);
       if (colonIndex === -1 && semicolonIndex === -1) break;
       if (colonIndex === -1) colonIndex = Number.MAX_VALUE;
       if (semicolonIndex === -1) semicolonIndex = Number.MAX_VALUE;
       const nextIndex = Math.min(colonIndex, semicolonIndex);
       const separator = nextIndex === colonIndex ? `:` : `;`;
       newCss += `${css.substring(0, nextIndex)}"${separator}"`;
-      css = css.substring(0, nextIndex);
+      css = css.substring(nextIndex + 1);
     }
     newCss += css;
-    const cssObj = JSON.parse(`{"${css}"}`);
+    const cssObj = JSON.parse(`{${newCss}}`);
     const newCssObj = {};
     for (const [key, value] of Object.entries(cssObj)) {
       let newKey = ``;
@@ -451,21 +448,21 @@ module.exports = tokens => {
   }
 
   function generateStringExpression() {
-    const pieces = [];
+    const pieces = code();
     skip(); // `"`
     while (!eof() && (is(`stringliteral`) || is(`stringcodeblockstart`))) {
       if (is(`stringliteral`)) {
-        pieces.push(eatValue());
+        pieces.append(defaultCode(eatValue()));
       } else {
         skip(); // stringcodeblockstart
         const expression = generateExpression();
         skip(); // stringcodeblockend
-        pieces.push(`"+(${expression})+"`);
+        pieces.append(defaultCode(`"+(`, expression, `)+"`));
       }
     }
     skip(); // `"`
 
-    return defaultCode(`"${pieces.join("")}"`);
+    return defaultCode(`"`, pieces, `"`);
   }
 
   function generateListExpression() {
