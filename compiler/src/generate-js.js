@@ -383,7 +383,20 @@ module.exports = tokens => {
   function convertCssToJson(css) {
     if (css.startsWith(`"`)) css = css.substring(1);
     if (css.endsWith(`"`)) css = css.substring(0, css.length - 1);
-    const cssObj = JSON.parse(`{${css}}`);
+    let newCss = ``;
+    while (true) {
+      const colonIndex = css.indexOf(`:`);
+      const semicolonIndex = css.indexOf(`;`);
+      if (colonIndex === -1 && semicolonIndex === -1) break;
+      if (colonIndex === -1) colonIndex = Number.MAX_VALUE;
+      if (semicolonIndex === -1) semicolonIndex = Number.MAX_VALUE;
+      const nextIndex = Math.min(colonIndex, semicolonIndex);
+      const separator = nextIndex === colonIndex ? `:` : `;`;
+      newCss += `${css.substring(0, nextIndex)}"${separator}"`;
+      css = css.substring(0, nextIndex);
+    }
+    newCss += css;
+    const cssObj = JSON.parse(`{"${css}"}`);
     const newCssObj = {};
     for (const [key, value] of Object.entries(cssObj)) {
       let newKey = ``;
