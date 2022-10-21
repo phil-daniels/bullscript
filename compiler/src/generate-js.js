@@ -357,6 +357,8 @@ module.exports = tokens => {
       } else if (isAhead(`dash`) && isAhead(`greaterthan`, 2)) {
         const argName = eatValue();
         return generateFunctionExpression(argName);
+      } else if (isValue(`if`)) {
+        return generateIfExpression();
       }
       return escapeJsKeywords(eatValue());
     } else if (is(`dash`)) {
@@ -369,6 +371,24 @@ module.exports = tokens => {
       return generatedObjectExpression();
     }
     throw new Error(`expected expression value`);
+  }
+
+  function generateIfExpression() {
+    skipRequired(`identifier`); // if
+    skipRequired(`parenstart`);
+    const condition = generateExpression();
+    skipRequired(`parenend`);
+    while (is(`else`)) {
+      skip(); // else
+      if (is(`if`)) {
+        skipRequired(`identifier`); // if
+        skipRequired(`parenstart`);
+        const condition = generateExpression();
+        skipRequired(`parenend`);
+      }
+    }
+
+    return 
   }
 
   function generateStyleExpression() {
