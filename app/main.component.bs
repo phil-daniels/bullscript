@@ -18,7 +18,7 @@ fn markComplete(todo) ->
 for (todo in todos)
    :div
       :button "Done", onClick: -> markComplete(todo)
-      todo.label style "text-decoration: underline"
+      "{todo.label}" style "text-decoration: underline"
       :button "X", onClick: -> delete(todo)
 
 /*
@@ -35,7 +35,7 @@ use database
       modify insert #{userId: auth.loggedInUserId}
 
 route "/todos" && auth.isLoggedIn
-   style .completed
+   css .completed
       line-decoration: line-through
 
    state newTodoLabel = ""

@@ -21,6 +21,7 @@ module.exports = [
   `space`,
   `statementend`,
   `stringcodeblockstart`,
+  `stringcodeblockend`,
   `stringliteral`,
   `stringend`,
   `stringstart`,

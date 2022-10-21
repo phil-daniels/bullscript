@@ -123,8 +123,10 @@ module.exports = input => {
       }
       if (is(`{`)) {
         skip(); // {
+        create(`stringcodeblockstart`);
         convertParenOrCurlyOrBracket(`}`);
         skip(); // }
+        create(`stringcodeblockend`);
       }
     }
     create(`stringend`);
