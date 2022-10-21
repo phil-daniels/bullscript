@@ -378,17 +378,20 @@ module.exports = tokens => {
     skipRequired(`parenstart`);
     const condition = generateExpression();
     skipRequired(`parenend`);
-    while (is(`else`)) {
+    const body = generateBlock();
+    let elseCode;
+    if (is(`else`)) {
       skip(); // else
       if (is(`if`)) {
-        skipRequired(`identifier`); // if
-        skipRequired(`parenstart`);
-        const condition = generateExpression();
-        skipRequired(`parenend`);
+        elseCode = generateIfExpression();
+      } else {
+        elseCode = generateExpression();
       }
+    } else {
+      elseCode = defaultCode(`null`);
     }
 
-    return 
+    return defaultCode(`(`, condition, `?`, body, `:`, elseCode, `)`);
   }
 
   function generateStyleExpression() {
