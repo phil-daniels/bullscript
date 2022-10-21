@@ -117,6 +117,8 @@ module.exports = tokens => {
       } else {
         return generateExpressionBasedStatement();
       }
+    } else if (is(`stringstart`)) {
+      return generateExpressionBasedStatement();
     }
     die(`could not make statement`);
   }
@@ -142,7 +144,9 @@ module.exports = tokens => {
     } else {
       const expression = writeExpression(expressionAst);
       if (context === Context.COMPONENT) {
-        return defaultCode(`$children.push(bs.tag("span", [`, expression, `]))`);
+        const {unnamedExpressions, namedExpressions} = parseTagInstantiationProps();
+        unnamedExpressions.push(expression);
+        return defaultCode(`$children.push(bs.tag("span", [`, unnamedExpressions, `], {`, namedExpressions, `}))`);
       } else {
         return expression;
       }
@@ -192,6 +196,23 @@ module.exports = tokens => {
     if (defaultMode !== Mode.BROWSER) throw new Error(defaultMode);
     skip(); // `:`
     const tagType = eatValue();
+    const {unnamedExpressions, namedExpressions} = parseTagInstantiationProps();
+    let children = "";
+    if (is(`blockstart`)) {
+      skip();
+      withContext(Context.COMPONENT, () => {
+        children = generateBlockContents(`blockend`);
+      });
+      skip(); // `blockend`
+    }
+
+    return browserCode(`{
+      $children.push(bs.tag("${tagType}",[`, unnamedExpressions, `],{`, namedExpressions, `}`, ...(children ? [`,`, `((() => {const $children = [];(()=>{`, children, `})();return $children;})())`] : []), `));
+    }`);
+  }
+
+  function parseTagInstantiationProps() {
+    if (defaultMode !== Mode.BROWSER) throw new Error(defaultMode);
     let unnamedExpressions = code();
     let namedExpressions = code();
     let first = true;
@@ -230,18 +251,7 @@ module.exports = tokens => {
         }
       }
     }
-    let children = "";
-    if (is(`blockstart`)) {
-      skip();
-      withContext(Context.COMPONENT, () => {
-        children = generateBlockContents(`blockend`);
-      });
-      skip(); // `blockend`
-    }
-
-    return browserCode(`{
-      $children.push(bs.tag("${tagType}",[`, unnamedExpressions, `],{`, namedExpressions, `}`, ...(children ? [`,`, `((() => {const $children = [];(()=>{`, children, `})();return $children;})())`] : []), `));
-    }`);
+    return {unnamedExpressions, namedExpressions};
   }
 
   function generateFunctionDeclaration() {
@@ -363,14 +373,17 @@ module.exports = tokens => {
   }
 
   function generateStyleExpression() {
+    if (defaultMode !== Mode.BROWSER) throw new Error(defaultMode);
     skipRequired(`identifier`); // style keyword
     const styleString = generateStringExpression();
 
-    return defaultCode(`{style:${JSON.stringify(convertCssToJson(styleString))}}`);
+    return defaultCode(`{style:${JSON.stringify(convertCssToJson(styleString.browser))}}`);
   }
 
   function convertCssToJson(css) {
-    const cssObj = JSON.parse(css);
+    if (css.startsWith(`"`)) css = css.substring(1);
+    if (css.endsWith(`"`)) css = css.substring(0, css.length - 1);
+    const cssObj = JSON.parse(`{${css}}`);
     const newCssObj = {};
     for (const [key, value] of Object.entries(cssObj)) {
       let newKey = ``;
@@ -431,7 +444,10 @@ module.exports = tokens => {
       if (is(`stringliteral`)) {
         pieces.push(eatValue());
       } else {
-        throw new Error(`implement me!`);
+        skip(); // stringcodeblockstart
+        const expression = generateExpression();
+        skip(); // stringcodeblockend
+        pieces.push(`"+(${expression})+"`);
       }
     }
     skip(); // `"`
