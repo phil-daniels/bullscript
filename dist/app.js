@@ -480,6 +480,7 @@ bs.tag = (tagType, expressions, props = {}, children = []) => {
 };
 
 function resolveTagAnonymousExpression(expression, expressionType, props, tagType, children) {
+  if (expression === null || typeof expression === "undefined") return expression;
   let prop;
   let value = expression;
   if (tagType === \`input\`) {
@@ -572,7 +573,14 @@ const $main$component$bs = function($props) {
                       );
                     } }));
                   },
-                  ($4) => $children2.push(bs.tag("span", [{ style: { "textDecoration": " line-through" } }, "" + todo.$get("label")], {})),
+                  ($4) => {
+                    $children2.push(bs.tag("span", [bs.if($4, () => todo.$get("completed"), ($5) => {
+                      return bs.pipe(
+                        $5,
+                        ($6) => ({ style: { "textDecoration": " line-through" } })
+                      );
+                    }), "" + todo.$get("label")], {}));
+                  },
                   ($4) => {
                     $children2.push(bs.tag("button", ["X"], { onClick: () => {
                       return bs.pipe(

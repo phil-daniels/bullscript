@@ -9,11 +9,6 @@ const Mode = {
   DATABASE: `database`,
 };
 
-const Context = {
-  COMPONENT: `component`,
-  FUNCTION: `function`,
-};
-
 const jsKeywordsToEscape = [
   `delete`
 ];
@@ -34,12 +29,10 @@ module.exports = tokens => {
 
   let isComponent = false;
   let defaultMode = Mode.BROWSER;
-  let context = null; // track whether component parent or function parent is closer
 
   if (is(`identifier`) && isValue(`component`)) {
     isComponent = true;
     skip(2); // `component` statementend
-    context = Context.COMPONENT;
   }
   const {browser, server, serverInit} = generateBlockContents(); // keep only the js
   return {browser, server, serverInit};
@@ -143,12 +136,7 @@ module.exports = tokens => {
       return generateAssignmentStatement(expressionAst);
     } else {
       const expression = writeExpression(expressionAst);
-      if (context === Context.COMPONENT) {
-        const {unnamedExpressions, namedExpressions} = parseTagInstantiationProps();
-        return defaultCode(`$children.push(bs.tag("span", [`, unnamedExpressions, expression, `], {`, namedExpressions, `}))`);
-      } else {
-        return expression;
-      }
+      return expression;
     }
   }
 
@@ -194,14 +182,22 @@ module.exports = tokens => {
   function generateTagInstantiation() {
     if (defaultMode !== Mode.BROWSER) throw new Error(defaultMode);
     skip(); // `:`
-    const tagType = eatValue();
+    let defaultStringExpression = null;
+    let tagType = null;
+    if (is(`stringstart`)) {
+      defaultStringExpression = generateStringExpression();
+      tagType = `span`;
+    } else {
+      tagType = eatValue();
+    }
     const {unnamedExpressions, namedExpressions} = parseTagInstantiationProps();
+    if (defaultStringExpression) {
+      unnamedExpressions.append(defaultStringExpression);
+    }
     let children = "";
     if (is(`blockstart`)) {
       skip();
-      withContext(Context.COMPONENT, () => {
-        children = generateBlockContents(`blockend`);
-      });
+      children = generateBlockContents(`blockend`);
       skip(); // `blockend`
     }
 
@@ -313,10 +309,7 @@ module.exports = tokens => {
     }
     skipRequired(`dash`);
     skipRequired(`greaterthan`);
-    let fnBody;
-    withContext(Context.FUNCTION, () => {
-      fnBody = generateBlock();
-    });
+    const fnBody = generateBlock();
 
     return defaultCode(paramExpression, `=>{`, fnBody, `}`);
   }
@@ -376,22 +369,32 @@ module.exports = tokens => {
   function generateIfExpression() {
     skipRequired(`identifier`); // if
     skipRequired(`parenstart`);
+    const pieces = [];
     const condition = generateExpression();
+    pieces.push(condition);
     skipRequired(`parenend`);
+    pieces.push(`,$=>{`);
     const body = generateBlock();
-    let elseCode;
-    if (is(`else`)) {
+    pieces.push(body);
+    pieces.push(`}`);
+    let hasElse = is(`identifier`) && isValue(`else`);
+    while (is(`identifier`) && isValue(`else`)) {
       skip(); // else
-      if (is(`if`)) {
-        elseCode = generateIfExpression();
-      } else {
-        elseCode = generateExpression();
+      if (is(`identifier`) && isValue(`if`)) {
+        skip(); // if
+        skipRequired(`parenstart`);
+        const elseCondition = generateExpression();
+        pieces.push(`,()=>`);
+        pieces.push(elseCondition);
+        skipRequired(`parenend`);
       }
-    } else {
-      elseCode = defaultCode(`null`);
+      const elseBody = generateBlock();
+      pieces.push(`,$=>{`);
+      pieces.push(elseBody);
+      pieces.push(`}`);
     }
 
-    return defaultCode(`(`, condition, `?`, body, `:`, elseCode, `)`);
+    return defaultCode(`bs.if($,()=>`, ...pieces, `)`);
   }
 
   function generateStyleExpression() {
@@ -399,7 +402,7 @@ module.exports = tokens => {
     skipRequired(`identifier`); // style keyword
     const styleString = generateStringExpression();
 
-    return defaultCode(`{style:${JSON.stringify(convertCssToJson(styleString.browser))}}`);
+    return defaultCode(`({style:${JSON.stringify(convertCssToJson(styleString.browser))}})`);
   }
 
   function convertCssToJson(css) {
@@ -594,14 +597,6 @@ module.exports = tokens => {
     isComponent = newIsComponent;
     const result = fn();
     isComponent = savedIsComponent;
-    return result;
-  }
-
-  function withContext(newContext, fn) {
-    const savedContext = context;
-    context = newContext;
-    const result = fn();
-    context = savedContext;
     return result;
   }
 

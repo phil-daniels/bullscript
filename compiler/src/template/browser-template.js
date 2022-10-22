@@ -443,6 +443,7 @@ bs.tag = (tagType, expressions, props = {}, children = []) => {
 };
 
 function resolveTagAnonymousExpression(expression, expressionType, props, tagType, children) {
+  if (expression === null || typeof expression === "undefined") return expression;
   let prop;
   let value = expression;
   if (tagType === `input`) {

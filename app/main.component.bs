@@ -18,7 +18,7 @@ fn markComplete(todo) ->
 for (todo in todos)
    :div
       :button "Done", onClick: -> markComplete(todo)
-      "{todo.label}" if (todo.completed) style "text-decoration: line-through"
+      :"{todo.label}" if (todo.completed) style "text-decoration: line-through"
       :button "X", onClick: -> delete(todo)
 
 /*
