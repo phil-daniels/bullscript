@@ -388,7 +388,8 @@ bs.for = (value, list, tagList, fn) => {
       const item = list[index];
       const children = [];
       fn(children, item);
-      tagList.push(React.createElement(React.Fragment, (item?.$id ? item.$id : null), ...children));
+      if (item?.$id) children.forEach(x => x.key = item.$id);
+      tagList.push(React.createElement(React.Fragment, null, children));
     },
     $ => {
       index++;

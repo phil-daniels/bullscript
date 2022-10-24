@@ -418,6 +418,8 @@ bs.while = (value, conditionFn, ...fns) => {
 };
 
 bs.for = (value, list, tagList, fn) => {
+  console.log("in bs.for");
+  console.dir(list);
   let index = 0;
   return bs.while(value,
     $ => index < list.length,
@@ -425,7 +427,8 @@ bs.for = (value, list, tagList, fn) => {
       const item = list[index];
       const children = [];
       fn(children, item);
-      tagList.push(React.createElement(React.Fragment, (item?.$id ? item.$id : null), ...children));
+      if (item?.$id) children.forEach(x => x.key = item.$id);
+      tagList.push(React.createElement(React.Fragment, null, children));
     },
     $ => {
       index++;
@@ -565,50 +568,52 @@ const $main$component$bs = function($props) {
         $children.push(bs.tag("input", [newTodoLabel, ($v) => $state_newTodoLabel.assign($v)], { onEnter: add }));
       },
       ($2) => bs.for($2, todos, $children, ($children2, todo) => {
-        $children2.push((() => {
-          const $children3 = [];
-          (() => {
-            return bs.pipe(
-              $2,
-              ($3) => {
-                $children3.push(bs.tag("div", [], {}, (() => {
-                  const $children4 = [];
-                  (() => {
-                    return bs.pipe(
-                      $3,
-                      ($4) => {
-                        $children4.push(bs.tag("button", ["Done"], { onClick: () => {
-                          return bs.pipe(
-                            $4,
-                            ($5) => markComplete(todo)
-                          );
-                        } }));
-                      },
-                      ($4) => {
-                        $children4.push(bs.tag("span", [bs.if($4, () => todo.$get("completed"), ($5) => {
-                          return bs.pipe(
-                            $5,
-                            ($6) => ({ style: { "textDecoration": " line-through" } })
-                          );
-                        }), "" + todo.$get("label")], {}));
-                      },
-                      ($4) => {
-                        $children4.push(bs.tag("button", ["X"], { onClick: () => {
-                          return bs.pipe(
-                            $4,
-                            ($5) => $_delete(todo)
-                          );
-                        } }));
-                      }
-                    );
-                  })();
-                  return $children4;
-                })()));
-              }
-            );
-          })();
-          return $children3;
-        })());
+        return bs.pipe(
+          $2,
+          ($3) => {
+            $children2.push(bs.tag("div", [], {}, (() => {
+              const $children3 = [];
+              (() => {
+                return bs.pipe(
+                  $3,
+                  ($4) => {
+                    $children3.push(bs.tag("button", ["Done"], { onClick: () => {
+                      return bs.pipe(
+                        $4,
+                        ($5) => markComplete(todo)
+                      );
+                    } }));
+                  },
+                  ($3) => {
+                    $children3.push(bs.tag("span", [bs.if(null, () => {console.dir(todo); return todo.$get("completed")}, ($5) => {
+                      return bs.pipe(
+                        $5,
+                        ($6) => ({ style: { "textDecoration": " line-through" } })
+                      );
+                    }), "" + todo.$get("label")], {}));
+                  },
+                  ($4) => {
+                    $children3.push(bs.tag("span", [bs.if($4, () => todo.$get("completed"), ($5) => {
+                      return bs.pipe(
+                        $5,
+                        ($6) => ({ style: { "textDecoration": " line-through" } })
+                      );
+                    }), "" + todo.$get("label")], {}));
+                  },
+                  ($4) => {
+                    $children3.push(bs.tag("button", ["X"], { onClick: () => {
+                      return bs.pipe(
+                        $4,
+                        ($5) => $_delete(todo)
+                      );
+                    } }));
+                  }
+                );
+              })();
+              return $children3;
+            })()));
+          }
+        );
       })
     );
   });
@@ -618,7 +623,7 @@ const $main$component$bs = function($props) {
 {
   const root = ReactDOM.createRoot(document.getElementById('root'));
   root.render(
-    React.createElement($main$component$bs, null, null)
+    React.createElement((()=>{const stuff = $main$component$bs();console.dir(stuff);return stuff;}), null, null)
     // React.createElement(React.StrictMode, null, null,
     //   React.createElement($main$bs, null, null)
     // )

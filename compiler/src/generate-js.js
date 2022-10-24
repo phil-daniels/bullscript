@@ -128,16 +128,14 @@ module.exports = tokens => {
     return defaultCode(`bs.for(`,
       `$, `, collectionExpression, `, $children,`,
       `($children,`, nameExpression, `) => {`,
-        ...(
-          isComponent ? [`
-            $children.push((() => {
-              const $children = [];`,
-              `(()=>{`, body, `})();`,
-              `return $children;
-            })())
-          `]
-          : [body]
-        ),
+        body,
+        // ...(
+        //   isComponent ? [`
+        //     `(()=>{`, body, `})();`,
+        //     `return $children;
+        //   `]
+        //   : [body]
+        // ),
       `}`,
     `)`);
   }
