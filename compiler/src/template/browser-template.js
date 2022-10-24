@@ -380,11 +380,16 @@ bs.while = (value, conditionFn, ...fns) => {
   }
 };
 
-bs.for = (value, list, fn) => {
+bs.for = (value, list, tagList, fn) => {
   let index = 0;
   return bs.while(value,
     $ => index < list.length,
-    $ => fn(list[index], list[index]),
+    $ => {
+      const item = list[index];
+      const children = [];
+      fn(children, item);
+      tagList.push(React.createElement(React.Fragment, (item?.$id ? item.$id : null), ...children));
+    },
     $ => {
       index++;
       return $;

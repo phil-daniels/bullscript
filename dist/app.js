@@ -417,11 +417,16 @@ bs.while = (value, conditionFn, ...fns) => {
   }
 };
 
-bs.for = (value, list, fn) => {
+bs.for = (value, list, tagList, fn) => {
   let index = 0;
   return bs.while(value,
     $ => index < list.length,
-    $ => fn(list[index], list[index]),
+    $ => {
+      const item = list[index];
+      const children = [];
+      fn(children, item);
+      tagList.push(React.createElement(React.Fragment, (item?.$id ? item.$id : null), ...children));
+    },
     $ => {
       index++;
       return $;
@@ -554,55 +559,55 @@ const $main$component$bs = function($props) {
         );
       },
       ($2) => {
-        $children.push(bs.tag("h1", ["todos"], { key: $iterObj.$id }));
+        $children.push(bs.tag("h1", ["todos"], {}));
       },
       ($2) => {
-        $children.push(bs.tag("input", [newTodoLabel, ($v) => $state_newTodoLabel.assign($v)], { onEnter: add, key: $iterObj.$id }));
+        $children.push(bs.tag("input", [newTodoLabel, ($v) => $state_newTodoLabel.assign($v)], { onEnter: add }));
       },
-      ($2) => bs.for($2, todos, ($iterObj2, todo) => {
-        $children.push((() => {
-          const $children2 = [];
+      ($2) => bs.for($2, todos, $children, ($children2, todo) => {
+        $children2.push((() => {
+          const $children3 = [];
           (() => {
             return bs.pipe(
               $2,
               ($3) => {
-                $children2.push(bs.tag("div", [], { key: $iterObj2.$id }, (() => {
-                  const $children3 = [];
+                $children3.push(bs.tag("div", [], {}, (() => {
+                  const $children4 = [];
                   (() => {
                     return bs.pipe(
                       $3,
                       ($4) => {
-                        $children3.push(bs.tag("button", ["Done"], { onClick: () => {
+                        $children4.push(bs.tag("button", ["Done"], { onClick: () => {
                           return bs.pipe(
                             $4,
                             ($5) => markComplete(todo)
                           );
-                        }, key: $iterObj2.$id }));
+                        } }));
                       },
                       ($4) => {
-                        $children3.push(bs.tag("span", [bs.if($4, () => todo.$get("completed"), ($5) => {
+                        $children4.push(bs.tag("span", [bs.if($4, () => todo.$get("completed"), ($5) => {
                           return bs.pipe(
                             $5,
                             ($6) => ({ style: { "textDecoration": " line-through" } })
                           );
-                        }), "" + todo.$get("label")], { key: $iterObj2.$id }));
+                        }), "" + todo.$get("label")], {}));
                       },
                       ($4) => {
-                        $children3.push(bs.tag("button", ["X"], { onClick: () => {
+                        $children4.push(bs.tag("button", ["X"], { onClick: () => {
                           return bs.pipe(
                             $4,
                             ($5) => $_delete(todo)
                           );
-                        }, key: $iterObj2.$id }));
+                        } }));
                       }
                     );
                   })();
-                  return $children3;
+                  return $children4;
                 })()));
               }
             );
           })();
-          return $children2;
+          return $children3;
         })());
       })
     );

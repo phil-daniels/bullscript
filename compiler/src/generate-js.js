@@ -126,8 +126,8 @@ module.exports = tokens => {
     const body = generateBlock();
 
     return defaultCode(`bs.for(`,
-      `$, `, collectionExpression, `, `,
-      `($iterObj,`, nameExpression, `) => {`,
+      `$, `, collectionExpression, `, $children,`,
+      `($children,`, nameExpression, `) => {`,
         ...(
           isComponent ? [`
             $children.push((() => {
@@ -208,7 +208,6 @@ module.exports = tokens => {
     if (defaultStringExpression) {
       unnamedExpressions.append(defaultStringExpression);
     }
-    namedExpressions.append(browserCode(`key:$iterObj.$id`));
     let children = "";
     if (is(`blockstart`)) {
       skip();
