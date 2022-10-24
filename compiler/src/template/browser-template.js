@@ -2,6 +2,8 @@
 
 // Object/Properties ===============================
 
+let lastObjId = 0;
+
 bs.state = (name, setter, initialValue) => {
   const stateObj = React.useRef(new bs.State(name, setter)).current;
   stateObj.reactSetter = React.useState(() => { stateObj.init(initialValue) ; return stateObj.$immObj })[1];
@@ -108,6 +110,7 @@ const ObjectMixin = {
   },
 
   $init(obj) {
+    this.$id = lastObjId++;
     this.$triggerUpdate = this.$triggerUpdate.bind(this);
     this.$triggerUpdate.obj = obj;
     this.$listeners = [];
@@ -381,7 +384,7 @@ bs.for = (value, list, fn) => {
   let index = 0;
   return bs.while(value,
     $ => index < list.length,
-    $ => fn(list[index]),
+    $ => fn(list[index], list[index]),
     $ => {
       index++;
       return $;

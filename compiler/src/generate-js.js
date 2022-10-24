@@ -127,15 +127,17 @@ module.exports = tokens => {
 
     return defaultCode(`bs.for(`,
       `$, `, collectionExpression, `, `,
-      nameExpression, ` => {`,
-        ...(isComponent ? [`
-          $children.push((() => {
-            const $children = [];`,
-            body,
-            `return $children;
-          })())
-        `] : []),
-        body,
+      `($iterObj,`, nameExpression, `) => {`,
+        ...(
+          isComponent ? [`
+            $children.push((() => {
+              const $children = [];`,
+              `(()=>{`, body, `})();`,
+              `return $children;
+            })())
+          `]
+          : [body]
+        ),
       `}`,
     `)`);
   }
@@ -206,6 +208,7 @@ module.exports = tokens => {
     if (defaultStringExpression) {
       unnamedExpressions.append(defaultStringExpression);
     }
+    namedExpressions.append(browserCode(`key:$iterObj.$id`));
     let children = "";
     if (is(`blockstart`)) {
       skip();

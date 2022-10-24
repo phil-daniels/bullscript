@@ -7,20 +7,19 @@ fn add() ->
    newTodoLabel = ""
    todos += {label: newTodoLabel, completed: false}
 
-/*fn delete(todo) ->
+fn delete(todo) ->
    todos.remove(todo)
 
 fn markComplete(todo) ->
-   todo.completed = true*/
+   todo.completed = true
 
 :h1 "todos"
 :input *newTodoLabel, onEnter: add
 for (todo in todos)
-   :div/*
+   :div
       :button "Done", onClick: -> markComplete(todo)
       :"{todo.label}" if (todo.completed) style "text-decoration: line-through"
       :button "X", onClick: -> delete(todo)
-*/
 
 /*
 component

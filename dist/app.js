@@ -39,6 +39,8 @@ appHtml = `
 
 // Object/Properties ===============================
 
+let lastObjId = 0;
+
 bs.state = (name, setter, initialValue) => {
   const stateObj = React.useRef(new bs.State(name, setter)).current;
   stateObj.reactSetter = React.useState(() => { stateObj.init(initialValue) ; return stateObj.$immObj })[1];
@@ -145,6 +147,7 @@ const ObjectMixin = {
   },
 
   $init(obj) {
+    this.$id = lastObjId++;
     this.$triggerUpdate = this.$triggerUpdate.bind(this);
     this.$triggerUpdate.obj = obj;
     this.$listeners = [];
@@ -418,7 +421,7 @@ bs.for = (value, list, fn) => {
   let index = 0;
   return bs.while(value,
     $ => index < list.length,
-    $ => fn(list[index]),
+    $ => fn(list[index], list[index]),
     $ => {
       index++;
       return $;
@@ -526,7 +529,7 @@ bs.children = fn => {
 const $main$component$bs = function($props) {
   let $ = null;
   return bs.children(($children) => {
-    let newTodoLabel, $state_newTodoLabel, todos, $state_todos, add;
+    let newTodoLabel, $state_newTodoLabel, todos, $state_todos, add, $_delete, markComplete;
     bs.pipe(
       $,
       ($2) => $state_newTodoLabel = bs.state("newTodoLabel", ($3) => newTodoLabel = $3, ""),
@@ -538,29 +541,69 @@ const $main$component$bs = function($props) {
           ($3) => bs.append(todos, bs.obj({ label: newTodoLabel, completed: false }))
         );
       },
-      ($2) => {
-        $children.push(bs.tag("h1", ["todos"], {}));
-      },
-      ($2) => {
-        $children.push(bs.tag("input", [newTodoLabel, ($v) => $state_newTodoLabel.assign($v)], { onEnter: add }));
-      },
-      ($2) => bs.for($2, todos, (todo) => {
-        $children.push((() => {
-          const $children2 = [];
-          return bs.pipe(
-            $2,
-            ($3) => {
-              $children2.push(bs.tag("div", [], {}));
-            }
-          );
-          return $children2;
-        })());
+      ($2) => $_delete = (todo) => {
         return bs.pipe(
           $2,
-          ($3) => {
-            $children.push(bs.tag("div", [], {}));
-          }
+          ($3) => todos.$get("remove")(todo)
         );
+      },
+      ($2) => markComplete = (todo) => {
+        return bs.pipe(
+          $2,
+          ($3) => todo.$set("completed", true)
+        );
+      },
+      ($2) => {
+        $children.push(bs.tag("h1", ["todos"], { key: $iterObj.$id }));
+      },
+      ($2) => {
+        $children.push(bs.tag("input", [newTodoLabel, ($v) => $state_newTodoLabel.assign($v)], { onEnter: add, key: $iterObj.$id }));
+      },
+      ($2) => bs.for($2, todos, ($iterObj2, todo) => {
+        $children.push((() => {
+          const $children2 = [];
+          (() => {
+            return bs.pipe(
+              $2,
+              ($3) => {
+                $children2.push(bs.tag("div", [], { key: $iterObj2.$id }, (() => {
+                  const $children3 = [];
+                  (() => {
+                    return bs.pipe(
+                      $3,
+                      ($4) => {
+                        $children3.push(bs.tag("button", ["Done"], { onClick: () => {
+                          return bs.pipe(
+                            $4,
+                            ($5) => markComplete(todo)
+                          );
+                        }, key: $iterObj2.$id }));
+                      },
+                      ($4) => {
+                        $children3.push(bs.tag("span", [bs.if($4, () => todo.$get("completed"), ($5) => {
+                          return bs.pipe(
+                            $5,
+                            ($6) => ({ style: { "textDecoration": " line-through" } })
+                          );
+                        }), "" + todo.$get("label")], { key: $iterObj2.$id }));
+                      },
+                      ($4) => {
+                        $children3.push(bs.tag("button", ["X"], { onClick: () => {
+                          return bs.pipe(
+                            $4,
+                            ($5) => $_delete(todo)
+                          );
+                        }, key: $iterObj2.$id }));
+                      }
+                    );
+                  })();
+                  return $children3;
+                })()));
+              }
+            );
+          })();
+          return $children2;
+        })());
       })
     );
   });
