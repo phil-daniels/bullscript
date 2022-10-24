@@ -129,9 +129,9 @@ module.exports = tokens => {
       `$, `, collectionExpression, `, `,
       nameExpression, ` => {`,
         ...(isComponent ? [`
-          $.children.push((() => {
+          $children.push((() => {
             const $children = [];`,
-            body(),
+            body,
             `return $children;
           })())
         `] : []),

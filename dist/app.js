@@ -545,6 +545,16 @@ const $main$component$bs = function($props) {
         $children.push(bs.tag("input", [newTodoLabel, ($v) => $state_newTodoLabel.assign($v)], { onEnter: add }));
       },
       ($2) => bs.for($2, todos, (todo) => {
+        $children.push((() => {
+          const $children2 = [];
+          return bs.pipe(
+            $2,
+            ($3) => {
+              $children2.push(bs.tag("div", [], {}));
+            }
+          );
+          return $children2;
+        })());
         return bs.pipe(
           $2,
           ($3) => {
