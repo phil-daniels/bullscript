@@ -125,7 +125,19 @@ module.exports = tokens => {
     skipRequired(`parenend`);
     const body = generateBlock();
 
-    return defaultCode(`bs.for($, `, collectionExpression, `, `, nameExpression, ` => {`, body, `})`);
+    return defaultCode(`bs.for(`,
+      `$, `, collectionExpression, `, `,
+      nameExpression, ` => {`,
+        ...(isComponent ? [`
+          $.children.push((() => {
+            const $children = [];`,
+            body(),
+            `return $children;
+          })())
+        `] : []),
+        body,
+      `}`,
+    `)`);
   }
 
   function generateExpressionBasedStatement() {
