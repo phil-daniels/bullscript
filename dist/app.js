@@ -526,7 +526,7 @@ bs.children = fn => {
 const $main$component$bs = function($props) {
   let $ = null;
   return bs.children(($children) => {
-    let newTodoLabel, $state_newTodoLabel, todos, $state_todos, add, $_delete, markComplete;
+    let newTodoLabel, $state_newTodoLabel, todos, $state_todos, add;
     bs.pipe(
       $,
       ($2) => $state_newTodoLabel = bs.state("newTodoLabel", ($3) => newTodoLabel = $3, ""),
@@ -536,18 +536,6 @@ const $main$component$bs = function($props) {
           $2,
           ($3) => $state_newTodoLabel.assign(""),
           ($3) => bs.append(todos, bs.obj({ label: newTodoLabel, completed: false }))
-        );
-      },
-      ($2) => $_delete = (todo) => {
-        return bs.pipe(
-          $2,
-          ($3) => todos.$get("remove")(todo)
-        );
-      },
-      ($2) => markComplete = (todo) => {
-        return bs.pipe(
-          $2,
-          ($3) => todo.$set("completed", true)
         );
       },
       ($2) => {
@@ -560,39 +548,7 @@ const $main$component$bs = function($props) {
         return bs.pipe(
           $2,
           ($3) => {
-            $children.push(bs.tag("div", [], {}, (() => {
-              const $children2 = [];
-              (() => {
-                return bs.pipe(
-                  $3,
-                  ($4) => {
-                    $children2.push(bs.tag("button", ["Done"], { onClick: () => {
-                      return bs.pipe(
-                        $4,
-                        ($5) => markComplete(todo)
-                      );
-                    } }));
-                  },
-                  ($4) => {
-                    $children2.push(bs.tag("span", [bs.if($4, () => todo.$get("completed"), ($5) => {
-                      return bs.pipe(
-                        $5,
-                        ($6) => ({ style: { "textDecoration": " line-through" } })
-                      );
-                    }), "" + todo.$get("label")], {}));
-                  },
-                  ($4) => {
-                    $children2.push(bs.tag("button", ["X"], { onClick: () => {
-                      return bs.pipe(
-                        $4,
-                        ($5) => $_delete(todo)
-                      );
-                    } }));
-                  }
-                );
-              })();
-              return $children2;
-            })()));
+            $children.push(bs.tag("div", [], {}));
           }
         );
       })
