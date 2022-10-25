@@ -508,18 +508,13 @@ function $state(...args) {
 }
 
 class $TagParent {
-  constructor(el) {
-    this.el = el;
+  constructor() {
     this.add = this.add.bind(this);
   }
 
   add(tag) {
-    const els = tag.getEls();
+    const els = tag.els;
     this.el.append(...els);
-  }
-
-  getEls() {
-    throw new Error("override me!");
   }
 }
 
@@ -544,7 +539,7 @@ class $Tag extends $TagParent {
         throw new Error("unexpected tag arg of type \"" + (typeof arg) + "\"");
       }
     }
-    
+    this.els = [el];
   }
 }
 
@@ -589,8 +584,12 @@ function applyTagProperties(key, value, valueType, props, tagType, children) {
 class $TagFor extends $Tag {
   constructor(list, fn) {
     super();
-    this.list = list;
-    this.fn = fn;
+    const els = [];
+    for (const item of list) {
+      fn(tag => {
+        childTags.push(tag)
+      }, item);
+    }
   }
 }
 
