@@ -226,12 +226,20 @@ bs.BsArray = class BsArray extends Array {
 Object.assign(bs.BsObject.prototype, ObjectMixin);
 Object.assign(bs.BsArray.prototype, ObjectMixin);
 
-bs.append = (subject, item) => {
-  if (Array.isArray(subject)) {
-    subject.add(item);
+$append = (subject, item) => {
+  if (!(subject instanceof $ValueHolder)) throw new Error();
+  const subjectValue = $unwrapValue(subject);
+  const subjectProp = $unwrapProp(subject);
+  const itemValue = $unwrapValue(item);
+  item = $toSimpleProp(item);
+  if (Array.isArray(subjectValue)) {
+    subjectValue.push(item);
   } else if (typeof subject === "string") {
-    subject += item;
+    subjectProp.value += itemValue;
+  } else {
+    throw new Error();
   }
+  subject.trigger();
   return subject;
 };
 
@@ -297,7 +305,7 @@ bs.promise = (workFn) => {
  * @returns Either a value (if no async step functions were encountered) or
  *          a promise that will be resolved once all step functions are complete.
  */
-bs.pipe = (value, ...fns) => {
+const $pipe = (value, ...fns) => {
   let count = 0;
   let promise = null;
   for (const fn of fns) {
@@ -492,44 +500,6 @@ bs.tag = (tagType, expressions, props = {}, children = []) => {
   return React.createElement(tagType, props, ...children);
 };
 
-function resolveTagAnonymousExpression(expression, expressionType, props, tagType, children) {
-  if (expression === null || typeof expression === "undefined") return expression;
-  let prop;
-  let value = expression;
-  if (tagType === \`input\`) {
-    if (expressionType === "string") {
-      prop = \`value\`;
-    } else if (expressionType === "function") {
-      prop = \`onInput\`;
-      const fn = value;
-      value = e => fn(e.target.value);
-    }
-  } else if (expressionType === "string") {
-    prop = \`innerText\`;
-  } else if (expression.style) {
-    prop = \`style\`;
-    value = expression.style;
-  } else {
-    throw new Error("tag \\"" + tagType + "\\" does not have a default property for anonymous expression of type \\"" + expressionType + "\\"");
-  }
-  if (prop === "innerText") {
-    children.push(value);
-  } else {
-    props[prop] = value;
-  }
-}
-
-function applyTagProperties(key, value, valueType, props, tagType, children) {
-  if (key === \`onEnter\`) {
-    key = \`onKeyUp\`;
-    const origFn = value;
-    value = e => {
-      if (e.key === \`Enter\`) origFn();
-    };
-  }
-  props[key] = value;
-}
-
 bs.children = fn => {
   const children = [];
   fn(children);
@@ -538,13 +508,31 @@ bs.children = fn => {
 
 /*BROWSER_APP_CODE !!SKIP!! */
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const $main$component$bs = function($add) {
-  const newTodoLabel = $state("newTodoLabel", ($3) => newTodoLabel = $3, "");
-  const todos = $state("todos", ($3) => todos = $3, []);
+  const newTodoLabel = $state("alright");
+  const todos = $state([]);
   const add = () => {
     return $pipe(null,
-      $ => $set(newTodoLabel, ""),
-      $ => $append(todos, $prop({ label: newTodoLabel, completed: false })),
+      $ => $append(todos, { label: newTodoLabel, completed: false }),
+      $ => newTodoLabel.assign(""),
     );
   };
   $_delete = (todo) => {
@@ -558,7 +546,7 @@ const $main$component$bs = function($add) {
     );
   };
   $add($tag("h1", ["todos"]));
-  $add($tag("input", [newTodoLabel, ($e) => $set(newTodoLabel, $e.target.value)], { onEnter: add }));
+  $add($tag("input", [newTodoLabel, ($v) => newTodoLabel.assign($v)], { onEnter: add }));
   $add($tagFor(todos, ($add, todo) => {
     $add($tag("div", ($add) => {
       $add($tag("button", ["Done"], {onClick: () => markComplete(todo)}));
@@ -568,12 +556,65 @@ const $main$component$bs = function($add) {
   }));
 };
 
-class $State {
-  constructor(name, setter, initialValue) {
-    this.name = name;
-    this.setter = setter;
-    this.value = initialValue;
+function $toSimpleProp(value) {
+  if (value instanceof $ValueHolder) {
+    if (value instanceof $State) {
+      value = $unwrapProp(value);
+    }
+  } else {
+    value = $prop(value);
   }
+  return value;
+}
+
+class $ValueHolder {}
+
+class $State extends $ValueHolder {
+  constructor(value) {
+    super();
+    this.value = $toSimpleProp(value);
+  }
+
+  listen(listener) {
+    if (!this.listeners) {
+      this.listeners = [];
+    }
+    this.listeners.push(listener);
+  }
+
+  assign(value) {
+    this.value = $toSimpleProp(value);
+    this.trigger();
+  }
+
+  trigger() {
+    if (this.listeners) {
+      for (const listener of this.listeners) {
+        listener();
+      }
+    }
+  }
+}
+
+function $unwrapValue(value) {
+  while (value instanceof $ValueHolder) {
+    value = value.value;
+  }
+  return value;
+}
+
+function $unwrapProp(value) {
+  while (!(value instanceof $Prop)) {
+    value = value.value;
+  }
+  return value;
+}
+
+function $wrapValueWithProp(value) {
+  if (!(value instanceof $Prop)) {
+    value = $prop(value);
+  }
+  return value;
 }
 
 function $state(...args) {
@@ -581,31 +622,134 @@ function $state(...args) {
 }
 
 class $TagParent {
-  constructor(el) {
-    this.el = el;
+  constructor() {
     this.add = this.add.bind(this);
   }
 
   add(tag) {
-    const els = tag.getEls();
-    this.el.append(...els);
+    const els = tag.els;
+    this.mainEl.append(...els);
   }
 }
 
 class $Tag extends $TagParent {
-  
+  constructor(type, ...args) {
+    super();
+    const children = [];
+    const el = document.createElement(type);
+    for (const arg of args) {
+      if (Array.isArray(arg)) {
+        for (const child of arg) {
+          resolveTagAnonymousExpression(child, this, el, type, children);
+        }
+      } else if (typeof arg === "function") {
+        arg(childTag => children.push(childTag));
+      } else if (typeof arg === "object") {
+        for (const key of Object.keys(arg)) {
+          const value = arg[key];
+          delete arg[key];
+          applyTagProperties(key, value, typeof value, el, type, children);
+        }
+      } else {
+        throw new Error("unexpected tag arg of type \\"" + (typeof arg) + "\\"");
+      }
+    }
+    for (const child of children) {
+      const childType = typeof child;
+      if (childType === "string") {
+        el.innerText = (el.innerText || "") + child;
+      }
+    }
+    this.mainEl = el;
+    this.els = [el];
+  }
+}
+
+function resolveTagAnonymousExpression(expression, tag, el, tagType, children) {
+  if (expression === null || typeof expression === "undefined") return expression;
+  let name;
+  let value = expression;
+  if (value instanceof $State) {
+    const state = value;
+    state.listen(() => {
+      resolveTagAnonymousExpression(state.value, tag, el, tagType, children);
+    });
+    value = state.value;
+  }
+  value = $unwrapValue(value);
+  const expressionType = typeof value;
+  if (tagType === \`input\`) {
+    if (expressionType === "string") {
+      name = \`value\`;
+    } else if (expressionType === "function") {
+      name = \`oninput\`;
+      const fn = value;
+      value = e => fn(e.target.value);
+    }
+  } else if (expressionType === "string") {
+    name = \`innerText\`;
+  } else if (value.style) {
+    name = \`style\`;
+    value = value.style;
+  } else {
+    throw new Error("tag \\"" + tagType + "\\" does not have a default property for anonymous expression of type \\"" + expressionType + "\\"");
+  }
+  if (name === "innerText") {
+    children.push(value);
+  } else {
+    applyTagProperties(name, value, expressionType, el, tagType, children);
+  }
+}
+
+function applyTagProperties(key, value, valueType, props, tagType, children) {
+  if (key === \`onEnter\`) {
+    key = \`onkeyup\`;
+    const origFn = value;
+    value = e => {
+      if (e.key === \`Enter\`) origFn();
+    };
+  } else if (key === \`onClick\`) {
+    key = \`onclick\`;
+  }
+  props[key] = value;
+}
+
+function $createMarker() {
+  const marker = document.createElement("span");
+  marker.style.visibility = "hidden";
+  return marker;
 }
 
 class $TagFor extends $Tag {
   constructor(list, fn) {
     super();
-    this.list = list;
-    this.fn = fn;
+    this.startMarker = $createMarker();
+    this.endMarker = $createMarker();
+    this.els = [this.startMarker];
+    const listValue = $unwrapValue(list);
+    if (listValue) {
+      for (const item of listValue) {
+        fn(tag => {
+          tag.els.forEach(x => this.els.push(x));
+        }, item);
+      }
+    }
+    this.els.push(this.endMarker);
+  }
+
+  add() {
+    throw new Error("cannot add children to a for loop");
   }
 }
 
-class $Prop {
+class $Prop extends $ValueHolder {
   constructor(value) {
+    super();
+    if (typeof value === \`object\`) {
+      for (const [childKey, childValue] of Object.entries(value)) {
+        value[childKey] = $toSimpleProp(childValue);
+      }
+    }
     this.value = value;
   }
 }
@@ -624,7 +768,10 @@ function $tag(...args) {
 
 {
   const root = document.getElementById('root');
-  $main$component$bs(new $TagParent(root).add);
+  const rootTag = new $TagParent(root);
+  rootTag.mainEl = root;
+  rootTag.else = [root];
+  $main$component$bs(rootTag.add);
 }
 
 // function Component1() {
