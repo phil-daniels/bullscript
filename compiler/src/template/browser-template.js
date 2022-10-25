@@ -501,9 +501,84 @@ bs.children = fn => {
   return React.createElement(React.Fragment, null, ...children);
 };
 
-/*BROWSER_APP_CODE*/
+/*BROWSER_APP_CODE !!SKIP!! */
 
-
+const $main$component$bs = function($props) {
+  let $ = null;
+  return bs.children(($children) => {
+    let newTodoLabel, $state_newTodoLabel, todos, $state_todos, add, $_delete, markComplete;
+    bs.pipe(
+      $,
+      ($2) => $state_newTodoLabel = bs.state("newTodoLabel", ($3) => newTodoLabel = $3, ""),
+      ($2) => $state_todos = bs.state("todos", ($3) => todos = $3, bs.arr()),
+      ($2) => add = () => {
+        return bs.pipe(
+          $2,
+          ($3) => $state_newTodoLabel.assign(""),
+          ($3) => bs.append(todos, bs.obj({ label: newTodoLabel, completed: false }))
+        );
+      },
+      ($2) => $_delete = (todo) => {
+        return bs.pipe(
+          $2,
+          ($3) => todos.$get("remove")(todo)
+        );
+      },
+      ($2) => markComplete = (todo) => {
+        return bs.pipe(
+          $2,
+          ($3) => todo.$set("completed", true)
+        );
+      },
+      ($2) => {
+        $children.push(bs.tag("h1", ["todos"], {}));
+      },
+      ($2) => {
+        $children.push(bs.tag("input", [newTodoLabel, ($v) => $state_newTodoLabel.assign($v)], { onEnter: add }));
+      },
+      ($2) => bs.for($2, todos, $children, ($children2, todo) => {
+        return bs.pipe(
+          $2,
+          ($3) => {
+            $children2.push(bs.tag("div", [], {}, (() => {
+              const $children3 = [];
+              (() => {
+                return bs.pipe(
+                  $3,
+                  ($4) => {
+                    $children3.push(bs.tag("button", ["Done"], { onClick: () => {
+                      return bs.pipe(
+                        $4,
+                        ($5) => markComplete(todo)
+                      );
+                    } }));
+                  },
+                  ($4) => {
+                    $children3.push(bs.tag("span", [bs.if($4, () => todo.$get("completed"), ($5) => {
+                      return bs.pipe(
+                        $5,
+                        ($6) => ({ style: { "textDecoration": " line-through" } })
+                      );
+                    }), "" + todo.$get("label")], {}));
+                  },
+                  ($4) => {
+                    $children3.push(bs.tag("button", ["X"], { onClick: () => {
+                      return bs.pipe(
+                        $4,
+                        ($5) => $_delete(todo)
+                      );
+                    } }));
+                  }
+                );
+              })();
+              return $children3;
+            })()));
+          }
+        );
+      })
+    );
+  });
+};
 
 {
   const root = ReactDOM.createRoot(document.getElementById('root'));
