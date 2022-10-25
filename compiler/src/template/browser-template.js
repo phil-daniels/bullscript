@@ -503,30 +503,29 @@ bs.children = fn => {
 
 /*BROWSER_APP_CODE !!SKIP!! */
 {
-const $state = bs.state, $append = bs.append, $updated = bs.updated, $tag = bs.tag;
-const $main$component$bs = function($p) {
-  let newTodoLabel, todos, add, $_delete, markComplete;
-  const $state_newTodoLabel = bs.state("newTodoLabel", ($3) => newTodoLabel = $3, "");
-  const $state_todos = bs.state("todos", ($3) => todos = $3, []);
-  add = () => {
-    $assign($state_newTodoLabel, "");
-    $append(todos, { label: newTodoLabel, completed: false });
+const $state = bs.state, $append = bs.append, $remove = bs.remove, $updated = bs.updated, $tag = bs.tag, $tagFor = bs.tagFor, $wrap = bs.wrap, $negate = bs.negate;
+const $main$component$bs = function($add) {
+  const newTodoLabel = bs.state("newTodoLabel", ($3) => newTodoLabel = $3, $wrap(""));
+  const todos = bs.state("todos", ($3) => todos = $3, $wrap([]));
+  const add = () => {
+    $set(newTodoLabel, "");
+    $append(todos, $wrap({ label: newTodoLabel, completed: false }));
   };
   $_delete = (todo) => {
-    todos.remove(todo);
+    $remove(todos, todo);
   };
   markComplete = (todo) => {
-    $set(todo, "completed", !todo.completed);
-    $updated(todo);
+    $set(todo.completed, $negate(todo.completed));
   };
-  $p.add($tag("h1", {innerText: "todos"}));
-  $p.add($tag("input", {innerText: $state_newTodoLabel}));
-    ($2) => {
-      $children.push(bs.tag("h1", ["todos"], {}));
-    },
-    ($2) => {
-      $children.push(bs.tag("input", [newTodoLabel, ($v) => $state_newTodoLabel.assign($v)], { onEnter: add }));
-    },
+  $add($tag("h1", ["todos"]));
+  $add($tag("input", [newTodoLabel, ($e) => $set(newTodoLabel, $e.target.value)], { onEnter: add }));
+  $add($tagFor(todos, ($add, todo) => {
+    $add($tag("div", ($add) => {
+      $add($tag("button", ["Done"], {onClick: () => markComplete(todo)}));
+      $add($tag("span", [$propIf()], {onClick: () => markComplete(todo)}));
+    }));
+  }));
+  $p.add();
     ($2) => bs.for($2, todos, $children, ($children2, todo) => {
       return bs.pipe(
         $2,
@@ -568,7 +567,9 @@ const $main$component$bs = function($p) {
       );
     })
   );
+  return $children;
 };
+}
 
 {
   const root = document.getElementById('root');
