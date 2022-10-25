@@ -503,71 +503,35 @@ bs.children = fn => {
 
 /*BROWSER_APP_CODE !!SKIP!! */
 {
-const $state = bs.state, $append = bs.append, $remove = bs.remove, $updated = bs.updated, $tag = bs.tag, $tagFor = bs.tagFor, $wrap = bs.wrap, $negate = bs.negate;
+const $state = bs.state, $append = bs.append, $remove = bs.remove, $updated = bs.updated, $tag = bs.tag, $tagFor = bs.tagFor, $wrap = bs.wrap, $negate = bs.negate, $pipe = bs.pipe;
 const $main$component$bs = function($add) {
   const newTodoLabel = bs.state("newTodoLabel", ($3) => newTodoLabel = $3, $wrap(""));
   const todos = bs.state("todos", ($3) => todos = $3, $wrap([]));
   const add = () => {
-    $set(newTodoLabel, "");
-    $append(todos, $wrap({ label: newTodoLabel, completed: false }));
+    return $pipe(null,
+      $ => $set(newTodoLabel, ""),
+      $ => $append(todos, $wrap({ label: newTodoLabel, completed: false })),
+    );
   };
   $_delete = (todo) => {
-    $remove(todos, todo);
+    return $pipe(null,
+      $ => $remove(todos, todo),
+    );
   };
   markComplete = (todo) => {
-    $set(todo.completed, $negate(todo.completed));
+    return $pipe(null,
+      () => $set(todo.completed, $negate(todo.completed)),
+    );
   };
   $add($tag("h1", ["todos"]));
   $add($tag("input", [newTodoLabel, ($e) => $set(newTodoLabel, $e.target.value)], { onEnter: add }));
   $add($tagFor(todos, ($add, todo) => {
     $add($tag("div", ($add) => {
       $add($tag("button", ["Done"], {onClick: () => markComplete(todo)}));
-      $add($tag("span", [$propIf()], {onClick: () => markComplete(todo)}));
+      $add($tag("span", [$tagIf($expEqual(todo.completed, true), {style: {"textDecoration": " line-through"}})], {onClick: () => markComplete(todo)}));
+      $add($tag("button", ["X"], {onClick: () => $_delete(todo)}));
     }));
   }));
-  $p.add();
-    ($2) => bs.for($2, todos, $children, ($children2, todo) => {
-      return bs.pipe(
-        $2,
-        ($3) => {
-          $children2.push(bs.tag("div", [], {}, (() => {
-            const $children3 = [];
-            (() => {
-              return bs.pipe(
-                $3,
-                ($4) => {
-                  $children3.push(bs.tag("button", ["Done"], { onClick: () => {
-                    return bs.pipe(
-                      $4,
-                      ($5) => markComplete(todo)
-                    );
-                  } }));
-                },
-                ($4) => {
-                  $children3.push(bs.tag("span", [bs.if($4, () => todo.$get("completed"), ($5) => {
-                    return bs.pipe(
-                      $5,
-                      ($6) => ({ style: { "textDecoration": " line-through" } })
-                    );
-                  }), "" + todo.$get("label")], {}));
-                },
-                ($4) => {
-                  $children3.push(bs.tag("button", ["X"], { onClick: () => {
-                    return bs.pipe(
-                      $4,
-                      ($5) => $_delete(todo)
-                    );
-                  } }));
-                }
-              );
-            })();
-            return $children3;
-          })()));
-        }
-      );
-    })
-  );
-  return $children;
 };
 }
 
