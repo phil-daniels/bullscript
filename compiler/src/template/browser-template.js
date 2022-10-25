@@ -382,14 +382,20 @@ bs.while = (value, conditionFn, ...fns) => {
 
 bs.for = (value, list, tagList, fn) => {
   let index = 0;
+  const loopFragments = [];
   return bs.while(value,
-    $ => index < list.length,
+    $ => {
+      const isDone = index >= list.length;
+      if (isDone) {
+        tagList.push(React.createElement(React.Fragment, null, loopFragments));
+      }
+      return !isDone;
+    },
     $ => {
       const item = list[index];
       const children = [];
       fn(children, item);
-      if (item?.$id) children.forEach(x => x.key = item.$id);
-      tagList.push(React.createElement(React.Fragment, null, children));
+      loopFragments.push(React.createElement(React.Fragment, item?.$id ? {key: item.$id} : null, ...children));
     },
     $ => {
       index++;
@@ -496,6 +502,8 @@ bs.children = fn => {
 };
 
 /*BROWSER_APP_CODE*/
+
+
 
 {
   const root = ReactDOM.createRoot(document.getElementById('root'));

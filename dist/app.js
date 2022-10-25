@@ -418,17 +418,21 @@ bs.while = (value, conditionFn, ...fns) => {
 };
 
 bs.for = (value, list, tagList, fn) => {
-  console.log("in bs.for");
-  console.dir(list);
   let index = 0;
+  const loopFragments = [];
   return bs.while(value,
-    $ => index < list.length,
+    $ => {
+      const isDone = index >= list.length;
+      if (isDone) {
+        tagList.push(React.createElement(React.Fragment, null, loopFragments));
+      }
+      return !isDone;
+    },
     $ => {
       const item = list[index];
       const children = [];
       fn(children, item);
-      if (item?.$id) children.forEach(x => x.key = item.$id);
-      tagList.push(React.createElement(React.Fragment, null, children));
+      loopFragments.push(React.createElement(React.Fragment, item?.$id ? {key: item.$id} : null, ...children));
     },
     $ => {
       index++;
@@ -584,14 +588,6 @@ const $main$component$bs = function($props) {
                       );
                     } }));
                   },
-                  ($3) => {
-                    $children3.push(bs.tag("span", [bs.if(null, () => {console.dir(todo); return todo.$get("completed")}, ($5) => {
-                      return bs.pipe(
-                        $5,
-                        ($6) => ({ style: { "textDecoration": " line-through" } })
-                      );
-                    }), "" + todo.$get("label")], {}));
-                  },
                   ($4) => {
                     $children3.push(bs.tag("span", [bs.if($4, () => todo.$get("completed"), ($5) => {
                       return bs.pipe(
@@ -623,7 +619,7 @@ const $main$component$bs = function($props) {
 {
   const root = ReactDOM.createRoot(document.getElementById('root'));
   root.render(
-    React.createElement((()=>{const stuff = $main$component$bs();console.dir(stuff);return stuff;}), null, null)
+    React.createElement($main$component$bs, null, null)
     // React.createElement(React.StrictMode, null, null,
     //   React.createElement($main$bs, null, null)
     // )
