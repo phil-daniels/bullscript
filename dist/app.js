@@ -22,8 +22,6 @@ appHtml = `
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js" integrity="sha512-WFN04846sdKMIP5LKNphMaWzU7YpMyCU245etK3g/2ARYbPK9Ub18eG+ljU96qKRCWh+quCY7yefSmlkQw1ANQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <!-- minified for prod
       <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -538,92 +536,95 @@ bs.children = fn => {
   return React.createElement(React.Fragment, null, ...children);
 };
 
-const $main$component$bs = function($props) {
-  let $ = null;
-  return bs.children(($children) => {
-    let newTodoLabel, $state_newTodoLabel, todos, $state_todos, add, $_delete, markComplete;
-    bs.pipe(
-      $,
-      ($2) => $state_newTodoLabel = bs.state("newTodoLabel", ($3) => newTodoLabel = $3, ""),
-      ($2) => $state_todos = bs.state("todos", ($3) => todos = $3, bs.arr()),
-      ($2) => add = () => {
-        return bs.pipe(
-          $2,
-          ($3) => $state_newTodoLabel.assign(""),
-          ($3) => bs.append(todos, bs.obj({ label: newTodoLabel, completed: false }))
-        );
-      },
-      ($2) => $_delete = (todo) => {
-        return bs.pipe(
-          $2,
-          ($3) => todos.$get("remove")(todo)
-        );
-      },
-      ($2) => markComplete = (todo) => {
-        return bs.pipe(
-          $2,
-          ($3) => todo.$set("completed", true)
-        );
-      },
-      ($2) => {
-        $children.push(bs.tag("h1", ["todos"], {}));
-      },
-      ($2) => {
-        $children.push(bs.tag("input", [newTodoLabel, ($v) => $state_newTodoLabel.assign($v)], { onEnter: add }));
-      },
-      ($2) => bs.for($2, todos, $children, ($children2, todo) => {
-        return bs.pipe(
-          $2,
-          ($3) => {
-            $children2.push(bs.tag("div", [], {}, (() => {
-              const $children3 = [];
-              (() => {
-                return bs.pipe(
-                  $3,
-                  ($4) => {
-                    $children3.push(bs.tag("button", ["Done"], { onClick: () => {
-                      return bs.pipe(
-                        $4,
-                        ($5) => markComplete(todo)
-                      );
-                    } }));
-                  },
-                  ($4) => {
-                    $children3.push(bs.tag("span", [bs.if($4, () => todo.$get("completed"), ($5) => {
-                      return bs.pipe(
-                        $5,
-                        ($6) => ({ style: { "textDecoration": " line-through" } })
-                      );
-                    }), "" + todo.$get("label")], {}));
-                  },
-                  ($4) => {
-                    $children3.push(bs.tag("button", ["X"], { onClick: () => {
-                      return bs.pipe(
-                        $4,
-                        ($5) => $_delete(todo)
-                      );
-                    } }));
-                  }
-                );
-              })();
-              return $children3;
-            })()));
-          }
-        );
-      })
+/*BROWSER_APP_CODE !!SKIP!! */
+
+const $main$component$bs = function($add) {
+  const newTodoLabel = $state("newTodoLabel", ($3) => newTodoLabel = $3, "");
+  const todos = $state("todos", ($3) => todos = $3, []);
+  const add = () => {
+    return $pipe(null,
+      $ => $set(newTodoLabel, ""),
+      $ => $append(todos, $prop({ label: newTodoLabel, completed: false })),
     );
-  });
+  };
+  $_delete = (todo) => {
+    return $pipe(null,
+      $ => $remove(todos, todo),
+    );
+  };
+  markComplete = (todo) => {
+    return $pipe(null,
+      () => $set(todo.completed, $negate(todo.completed)),
+    );
+  };
+  $add($tag("h1", ["todos"]));
+  $add($tag("input", [newTodoLabel, ($e) => $set(newTodoLabel, $e.target.value)], { onEnter: add }));
+  $add($tagFor(todos, ($add, todo) => {
+    $add($tag("div", ($add) => {
+      $add($tag("button", ["Done"], {onClick: () => markComplete(todo)}));
+      $add($tag("span", [$tagIf($expEqual(todo.completed, true), {style: {"textDecoration": " line-through"}})], {onClick: () => markComplete(todo)}));
+      $add($tag("button", ["X"], {onClick: () => $_delete(todo)}));
+    }));
+  }));
 };
 
+class $State {
+  constructor(name, setter, initialValue) {
+    this.name = name;
+    this.setter = setter;
+    this.value = initialValue;
+  }
+}
+
+function $state(...args) {
+  return new $State(...args);
+}
+
+class $TagParent {
+  constructor(el) {
+    this.el = el;
+    this.add = this.add.bind(this);
+  }
+
+  add(tag) {
+    const els = tag.getEls();
+    this.el.append(...els);
+  }
+}
+
+class $Tag extends $TagParent {
+  
+}
+
+class $TagFor extends $Tag {
+  constructor(list, fn) {
+    super();
+    this.list = list;
+    this.fn = fn;
+  }
+}
+
+class $Prop {
+  constructor(value) {
+    this.value = value;
+  }
+}
+
+function $tagFor(...args) {
+  return new $TagFor(...args);
+}
+
+function $prop(value) {
+  return new $Prop(value);
+}
+
+function $tag(...args) {
+  return new $Tag(...args);
+}
 
 {
-  const root = ReactDOM.createRoot(document.getElementById('root'));
-  root.render(
-    React.createElement($main$component$bs, null, null)
-    // React.createElement(React.StrictMode, null, null,
-    //   React.createElement($main$bs, null, null)
-    // )
-  );
+  const root = document.getElementById('root');
+  $main$component$bs(new $TagParent(root).add);
 }
 
 // function Component1() {
