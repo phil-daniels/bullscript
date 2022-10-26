@@ -2,16 +2,6 @@
 
 /*BROWSER_APP_CODE !!SKIP!! */
 
-State todo
-  Prop
-    Obj
-      label: "hi"
-      Completed: false
-
-blah.assign(todo.label);
-
-Obj.lable = "yo"
-
 // all objects created in bullscript are proxies, which by default just forward to object
 //     objects can be listened to for updates
 
@@ -19,24 +9,48 @@ Obj.lable = "yo"
 
 // can do this to get primitive as property: person.$prop("name")
 
+/*
 Let s = "hi";
 Const $prop_s = $prop(s, $v => s = $v);
 Let o = {name: "John"};
 Const $prop_o = $prop(s, $v => o = $v);
 
+// top-level bound prop
 $tag([$prop_s]);
+// nested bound prop
 $tag([o.$prop("name")]);
 
-const $main$component$bs = function($add) {
-  const newTodoLabel = $state("alright");
-  const todos = $state([]);
+// set top-level
+$prop_s.set("yo");
+// get top-level
+var blah = s;
+
+// setting nested
+o.name = "John";
+// getting nested
+var blah = o.name;
+*/
+
+const $bs_main$bs = function($bs_add) {
+  const component = $bs.component();
+  let newTodoLabel, todos;
+  const $bs_newTodoLabel = component.$bs_state(() => {
+    return $bs.pipe(null,
+      () => "alright",
+    );
+  }, $bs_v => newTodoLabel = $bs_v);
+  const $bs_todos = component.$bs_state(() => {
+    return $bs.pipe(null,
+      () => [],
+    );
+  }, $bs_value => todos = $bs_value);
   const add = () => {
     return $pipe(null,
       $ => $append(todos, { label: newTodoLabel, completed: false }),
       $ => newTodoLabel.assign(""),
     );
   };
-  $_delete = (todo) => {
+  $bs_esc_delete = (todo) => {
     return $pipe(null,
       $ => $remove(todos, todo),
     );
@@ -46,13 +60,13 @@ const $main$component$bs = function($add) {
       () => $set(todo.completed, $negate(todo.completed)),
     );
   };
-  $add($tag("h1", ["todos"]));
-  $add($tag("input", [newTodoLabel, ($v) => newTodoLabel.assign($v)], { onEnter: add }));
-  $add($tagFor(todos, ($add, todo) => {
-    $add($tag("div", ($add) => {
-      $add($tag("button", ["Done"], {onClick: () => markComplete(todo)}));
-      $add($tag("span", [$tagIf($expEqual(todo.completed, true), {style: {"textDecoration": " line-through"}})], {onClick: () => markComplete(todo)}));
-      $add($tag("button", ["X"], {onClick: () => $_delete(todo)}));
+  $bs_add($bs.tag("h1", ["todos"]));
+  $bs_add($bs.tag("input", [$bs_newTodoLabel, ($bs_v) => $bs_newTodoLabel.set($bs_v)], { onEnter: add }));
+  $bs_add($bs.tagFor($bs_todos, ($bs_add, todo) => {
+    $bs_add($bs.tag("div", ($bs_add) => {
+      $bs_add($bs.tag("button", ["Done"], {onClick: () => markComplete(todo)}));
+      $bs_add($bs.tag("span", [$bs_if($bs_equals(todo.completed, true), {style: {"textDecoration": " line-through"}})], {onClick: () => markComplete(todo)}));
+      $bs_add($bs.tag("button", ["X"], {onClick: () => $bs_esc_delete(todo)}));
     }));
   }));
 };
@@ -62,7 +76,21 @@ const $main$component$bs = function($add) {
   const rootTag = new $TagParent(root);
   rootTag.mainEl = root;
   rootTag.else = [root];
-  $main$component$bs(rootTag.add);
+  $bs_main$bs(rootTag.add);
+}
+
+//== SUPPORT =====================================
+
+{
+  $bs = {};
+
+  class Component {
+    $bs_state(value, setter) {
+
+    }
+  }
+
+  bs.component = () => new Component();
 }
 
 })(typeof module !== "undefined" ? module.exports : (window.bs = {}));
