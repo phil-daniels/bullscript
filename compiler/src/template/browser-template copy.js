@@ -1,38 +1,3 @@
-const http = require('http');
-
-let appHtml;
-
-
-
-http.createServer((request, response) => {
-  undefined
-  response.writeHead(200, {'Content-Type': 'text/html'});
-  response.write(appHtml);
-  response.end();
-}).listen(8080);
-
-console.log("Started!");
-
-appHtml = `
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8"/>
-    <title>ADHD App</title>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js" integrity="sha512-WFN04846sdKMIP5LKNphMaWzU7YpMyCU245etK3g/2ARYbPK9Ub18eG+ljU96qKRCWh+quCY7yefSmlkQw1ANQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <!-- minified for prod
-      <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-      <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    -->
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-    <script>
-
 (bs => {
 
 // Object/Properties ===============================
@@ -239,7 +204,7 @@ $append = (subject, item) => {
   } else {
     throw new Error();
   }
-  subject.trigger({operation: \`append\`, value: item});
+  subject.trigger({operation: `append`, value: item});
   return subject;
 };
 
@@ -651,7 +616,7 @@ class $Tag extends $TagParent {
           applyTagProperties(key, value, typeof value, el, type, children);
         }
       } else {
-        throw new Error("unexpected tag arg of type \\"" + (typeof arg) + "\\"");
+        throw new Error("unexpected tag arg of type \"" + (typeof arg) + "\"");
       }
     }
     for (const child of children) {
@@ -678,21 +643,21 @@ function resolveTagAnonymousExpression(expression, tag, el, tagType, children) {
   }
   value = $unwrapValue(value);
   const expressionType = typeof value;
-  if (tagType === \`input\`) {
+  if (tagType === `input`) {
     if (expressionType === "string") {
-      name = \`value\`;
+      name = `value`;
     } else if (expressionType === "function") {
-      name = \`oninput\`;
+      name = `oninput`;
       const fn = value;
       value = e => fn(e.target.value);
     }
   } else if (expressionType === "string") {
-    name = \`innerText\`;
+    name = `innerText`;
   } else if (value.style) {
-    name = \`style\`;
+    name = `style`;
     value = value.style;
   } else {
-    throw new Error("tag \\"" + tagType + "\\" does not have a default property for anonymous expression of type \\"" + expressionType + "\\"");
+    throw new Error("tag \"" + tagType + "\" does not have a default property for anonymous expression of type \"" + expressionType + "\"");
   }
   if (name === "innerText") {
     children.push(value);
@@ -702,14 +667,14 @@ function resolveTagAnonymousExpression(expression, tag, el, tagType, children) {
 }
 
 function applyTagProperties(key, value, valueType, props, tagType, children) {
-  if (key === \`onEnter\`) {
-    key = \`onkeyup\`;
+  if (key === `onEnter`) {
+    key = `onkeyup`;
     const origFn = value;
     value = e => {
-      if (e.key === \`Enter\`) origFn();
+      if (e.key === `Enter`) origFn();
     };
-  } else if (key === \`onClick\`) {
-    key = \`onclick\`;
+  } else if (key === `onClick`) {
+    key = `onclick`;
   }
   props[key] = value;
 }
@@ -764,7 +729,7 @@ class $TagFor extends $Tag {
 class $Prop extends $ValueHolder {
   constructor(value) {
     super();
-    if (typeof value === \`object\`) {
+    if (typeof value === `object`) {
       for (const [childKey, childValue] of Object.entries(value)) {
         value[childKey] = $toSimpleProp(childValue);
       }
@@ -819,8 +784,3 @@ function $tag(...args) {
 // }
 
 })(typeof module !== "undefined" ? module.exports : (window.bs = {}));
-    </script>
-  </body>
-</html>
-
-`;
