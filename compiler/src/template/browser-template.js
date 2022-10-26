@@ -45,19 +45,19 @@ const $bs_main$bs = function($bs_add) {
     );
   }, $bs_value => todos = $bs_value);
   const add = () => {
-    return $pipe(null,
-      $ => $append(todos, { label: newTodoLabel, completed: false }),
-      $ => newTodoLabel.assign(""),
+    return $bs.pipe(null,
+      $ => $bs.append(todos, { label: newTodoLabel, completed: false }),
+      $ => newTodoLabel.set(""),
     );
   };
   $bs_esc_delete = (todo) => {
-    return $pipe(null,
-      $ => $remove(todos, todo),
+    return $bs.pipe(null,
+      $ => $bs.remove(todos, todo),
     );
   };
   markComplete = (todo) => {
-    return $pipe(null,
-      () => $set(todo.completed, $negate(todo.completed)),
+    return $bs.pipe(null,
+      () => todo.completed = !todo.completed,
     );
   };
   $bs_add($bs.tag("h1", ["todos"]));
@@ -75,7 +75,7 @@ const $bs_main$bs = function($bs_add) {
   const root = document.getElementById('root');
   const rootTag = new $TagParent(root);
   rootTag.mainEl = root;
-  rootTag.else = [root];
+  rootTag.els = [root];
   $bs_main$bs(rootTag.add);
 }
 
@@ -84,13 +84,116 @@ const $bs_main$bs = function($bs_add) {
 {
   $bs = {};
 
-  class Component {
-    $bs_state(value, setter) {
-
+  class State {
+    constructor(value, setter) {
+      this.value = value;
+      this.setter = setter;
     }
   }
 
-  bs.component = () => new Component();
+  class Component {
+    constructor() {
+      states = [];
+    }
+
+    $bs_state(initializer, setter) {
+      states.push({initializer, setter});
+      const initialValue = initializer();
+      let state;
+      if (initialValue.$bs_type === "promise") {
+        state = new State(null, setter);
+        $bs.thenPromise(initialValue, value => {
+          state.set(value);
+        });
+      } else {
+        state = new State(initialValue, setter);
+      }
+    }
+  }
+
+  $bs.component = () => new Component();
+
+  //== Promises =======================================================
+
+  $bs.resolvePromise = (p, value) => {
+    if (p.resolved) throw new Error("Promise already resolved");
+    p.value = value;
+    p.resolved = true;
+    processPromiseIfNeeded(p);
+  }
+
+  $bs.thenPromise = (p, successFn) => {
+    if (!p.successFns) {
+      p.successFns = [];
+    }
+    p.successFns.push(successFn);
+    processPromiseIfNeeded(p);
+    return p;
+  }
+
+  function processPromiseIfNeeded(p) {
+    if (p.resolved) {
+      let count = 0;
+      for (const fn of p.successFns) {
+        count++;
+        p.value = fn(p.value);
+        if (p.value?.$bs_type === "promise") {
+          p.successFns = p.successFns.slice(count);
+          processPromiseIfNeeded(p);
+          break;
+        }
+      }
+    };
+  }
+
+  $bs.promise = (workFn) => {
+    const p = {
+      $bs_type: "promise"
+    };
+    workFn(p);
+    return p;
+  }
+
+  //== Async/Flow Control =============================================
+
+  /**
+   * Allows execution of sync and async fns together in series.
+   * @param {*} value Initial value to enter pipe
+   * @param  {...any} fns Step functions to be executed that return values or promises.
+   * @returns Either a value (if no async step functions were encountered) or
+   *          a promise that will be resolved once all step functions are complete.
+   */
+   $bs.pipe = (value, ...fns) => {
+    let count = 0;
+    let promise = null;
+    for (const fn of fns) {
+      count++;
+      const result = fn(value);
+      if (result?.$bs_type === "promise") {
+        promise = result;
+        break;
+      } else {
+        value = result;
+      }
+    }
+    if (promise) {
+      if (count === fns.length) return promise;
+      return $bs.promise($p => {
+        $bs.thenPromise(promise, newValue => {
+          value = newValue;
+          fns = fns.slice(count);
+          const result2 = $bs.pipe(value, ...fns);
+          if (result2?.$bs_type === "promise") {
+            $bs.thenPromise(result2, newValue2 => $bs.resolvePromise($p, newValue2));
+          } else {
+            $bs.resolvePromise($p, result2)
+          }
+        });
+      });
+    } else {
+      return value;
+    }
+  }
 }
 
 })(typeof module !== "undefined" ? module.exports : (window.bs = {}));
