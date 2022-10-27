@@ -90,6 +90,7 @@ const $bs = {};
           }
         }
         target[property] = value;
+        return true;
       }
     });
   };
@@ -385,6 +386,29 @@ const $bs = {};
   }
 }
 
+//== Util ====================================
+
+$bs.append = (subject, item) => {
+  const subjectValue = unwrapValue(subject);
+  if (typeof item === "string" && !isBsContainer(subject)) throw new Error("if appending to string, subject must be a bs container");
+  if (Array.isArray(subjectValue)) {
+    subjectValue.push(item);
+  } else if (typeof subject === "string") {
+    const itemValue = unwrapValue(subject);
+    subject.set(subject.resolve() += itemValue);
+  } else {
+    throw new Error();
+  }
+  subject.trigger({operation: \`append\`, value: item});
+  return subject;
+};
+
+function isBsContainer(value) {
+  const bsType = value?.$bs_type;
+  if (bsType === "state" || bsType === "reference") return true;
+  return false;
+}
+
 //== App =====================================
 
 /*BROWSER_APP_CODE !!SKIP!! */
@@ -404,7 +428,7 @@ const $bs_main$bs = function($bs_add) {
   }, $bs_value => todos = $bs_value);
   const add = () => {
     return $bs.pipe(null,
-      $ => $bs.append(todos, { label: newTodoLabel, completed: false }),
+      $ => $bs.append($bs_todos, { label: newTodoLabel, completed: false }),
       $ => newTodoLabel.set(""),
     );
   };

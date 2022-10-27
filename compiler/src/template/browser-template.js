@@ -55,6 +55,7 @@ const $bs = {};
           }
         }
         target[property] = value;
+        return true;
       }
     });
   };
@@ -353,12 +354,12 @@ const $bs = {};
 //== Util ====================================
 
 $bs.append = (subject, item) => {
-  const subjectValue = $bs.unwrapValue(subject);
+  const subjectValue = unwrapValue(subject);
   if (typeof item === "string" && !isBsContainer(subject)) throw new Error("if appending to string, subject must be a bs container");
   if (Array.isArray(subjectValue)) {
     subjectValue.push(item);
   } else if (typeof subject === "string") {
-    const itemValue = $bs.unwrapValue(subject);
+    const itemValue = unwrapValue(subject);
     subject.set(subject.resolve() += itemValue);
   } else {
     throw new Error();
