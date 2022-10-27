@@ -86,6 +86,13 @@ const $bs = {};
       }
       this.value = value;
     }
+
+    trigger(event) {
+      const listeners = this.$bs_listeners;
+      for (const listener of listeners) {
+        listener(event);
+      }
+    }
   }
 
   class Component {
@@ -312,12 +319,14 @@ const $bs = {};
       const bsType = list?.$bs_type;
       if (bsType === "state" || bsType === "object" || bsType === "reference") {
         list.$bs_listeners.push(event => {
-          const loopMarker = makeLoopMarker();
-          this.endMarker.insertBefore(loopMarker.start);
-          fn(tag => {
-            tag.els.forEach(x => this.endMarker.insertBefore(x));
-          }, item);
-          this.endMarker.insertBefore(loopMarker.end);
+          if (event.operation === "append") {
+            const loopMarker = makeLoopMarker();
+            this.endMarker.parentNode.insertBefore(loopMarker.start, this.endMarker);
+            fn(tag => {
+              tag.els.forEach(x => this.endMarker.parentNode.insertBefore(x, this.endMarker));
+            }, event.value);
+            this.endMarker.parentNode.insertBefore(loopMarker.end, this.endMarker);
+          }
         });
       }
       this.startMarker = createMarker();
