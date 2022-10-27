@@ -395,6 +395,33 @@ const $bs = {};
   }
 }
 
+//== Expressions ==============================
+
+$bs.if = (...items) => {
+  return {
+    $bs_type: "expression",
+    expressionType: "if",
+    items,
+  };
+};
+
+$bs.equals = (thing1, thing2) => {
+  return {
+    $bs_type: "expression",
+    expressionType: "equals",
+    thing1,
+    thing2,
+  };
+};
+
+$bs.ref = (subject, ...items) => {
+  return {
+    $bs_type: "expression",
+    expressionType: "ref",
+    items,
+  };
+};
+
 //== Util ====================================
 
 $bs.append = (subject, item) => {
@@ -456,7 +483,7 @@ const $bs_main$bs = function($bs_add) {
   $bs_add($bs.tagFor($bs_todos, ($bs_add, todo) => {
     $bs_add($bs.tag("div", ($bs_add) => {
       $bs_add($bs.tag("button", ["Done"], {onClick: () => markComplete(todo)}));
-      $bs_add($bs.tag("span", [$bs_if($bs_equals($bs_ref(todo, "completed"), true), {style: {"textDecoration": " line-through"}}), $bs_ref(todo, "label")], {onClick: () => markComplete(todo)}));
+      $bs_add($bs.tag("span", [$bs.if($bs.equals($bs.ref(todo, "completed"), true), {style: {"textDecoration": " line-through"}}), $bs.ref(todo, "label")], {onClick: () => markComplete(todo)}));
       $bs_add($bs.tag("button", ["X"], {onClick: () => $bs_esc_delete(todo)}));
     }));
   }));
