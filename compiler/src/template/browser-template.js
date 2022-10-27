@@ -260,8 +260,8 @@ const $bs = {};
     } else if (bsType === "expression") {
       const expr = buildExpression(value);
       value = expr.calculateValue();
-      expr.$bs_listeners.push(() => {
-        
+      expr.$bs_listeners.push(({value}) => {
+        resolveTagAnonymousExpression(value, tag, el, tagType, children);
       });
     }
     const expressionType = typeof value;
