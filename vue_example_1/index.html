@@ -1,7 +1,86 @@
 <html>
-  <body>
+
+<body>
     <div id="app"></div>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="app.js"></script>
-  </body>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css" integrity="sha512-HqxHUkJM0SYcbvxUw5P60SzdOTy/QVwA1JJrvaXJv4q7lmbDZCmZaqz01UPOaQveoxfYRv1tHozWGPMcuTBuvQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        .margin-bottom-10 {
+            margin-bottom: 10px !important;
+        }
+
+        .cursor-pointer {
+            cursor: pointer;
+        }
+
+        .todo-input {
+            height: 64px;
+            color: #4a4a4a;
+            padding-left: 24px;
+        }
+    </style>
+    <script>
+        const app = Vue.createApp({
+            template: `<MainPage/>`
+        });
+        app.component(`MainPage`, {
+            template: `
+                <div class="container">
+                    <div class="columns is-centered">
+                        <div class="column is-half has-text-centered">
+                            <h1 class="title is-1">todos</h1>
+                            <input class="input todo-input margin-bottom-10" v-model="newTodoLabel" @keyup.enter="add"/>
+                            <template v-for="todo in todos">
+                                <Todo :value="todo"/>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            `,
+            data() {
+                return {
+                    newTodoLabel: "",
+                    todos: [],
+                };
+            },
+            methods: {
+                add() {
+                    this.todos.push({ label: this.newTodoLabel, completed: false });
+                    this.newTodoLabel = "";
+                },
+                remove(todo) {
+                    this.todos = this.todos.filter(x => x !== todo);
+                },
+            }
+        });
+        app.component(`Todo`, {
+            props: ["value"],
+            template: `
+                <div :class="todoClass + ' notification margin-bottom-10 cursor-pointer has-text-left'" @click="toggleCompleted(value)">
+                    <button class="delete" @click.stop="remove(value)"></button>
+                    <span :style="todoStyle">{{value.label}}</span>
+                </div>
+            `,
+            computed: {
+                todoStyle() {
+                    return this.value.completed ? { "text-decoration": "line-through" } : {};
+                },
+                todoClass() {
+                    return this.value.completed ? "is-primary" : "";
+                },
+            },
+            methods: {
+                toggleCompleted() {
+                    this.value.completed = !this.value.completed;
+                    console.log(`${this.value.label} has been changed to ${this.value.completed}`);
+                },
+                remove() {
+                    this.$parent.remove(this.value);
+                },
+            }
+        });
+        app.mount("#app");
+    </script>
+</body>
+
 </html>
