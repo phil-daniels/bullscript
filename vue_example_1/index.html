@@ -24,7 +24,7 @@
             border-top-style: hidden;
             border-right-style: hidden;
             border-left-style: hidden;
-            border-bottom: 2px solid #eee;
+            border-bottom: 2px solid #f0f0f0;
             border-radius: 0px;
             text-shadow: none;
             box-shadow: none;
@@ -47,17 +47,17 @@
                         <div class="column is-half has-text-centered">
                             <h1 class="title is-1">todos</h1>
                             <input class="input todo-input margin-bottom-10" v-model="newTodoLabel" @keyup.enter="add"/>
-                            <template v-for="todo in todos">
+                            <template v-for="todo in visibleTodos">
                                 <Todo :value="todo"/>
                             </template>
-                            <div class="columns">
-                                <div class="column has-text-left is-flex is-vcentered">
-                                  ok
+                            <div class="columns is-vcentered">
+                                <div class="column has-text-left">
+                                    <b>{{completedCount}}</b> done of <b>{{todos.length}}</b>
                                 </div>
                                 <div class="column is-three-quarters has-text-right">
-                                  <button class="button is-light margin-left-10">All</button>
-                                  <button class="button is-light margin-left-10">Done</button>
-                                  <button class="button is-light margin-left-10">Not Finished</button>
+                                  <button class="button is-light margin-left-10" @click="setDisplayMode('all')" :class="{'is-primary' : this.displayMode === 'all'}">All</button>
+                                  <button class="button is-light margin-left-10" @click="setDisplayMode('done')">Done</button>
+                                  <button class="button is-light margin-left-10" @click="setDisplayMode('notfinished')">Not Finished</button>
                                 </div>
                             </div>
                         </div>
@@ -68,15 +68,37 @@
                 return {
                     newTodoLabel: "",
                     todos: [],
+                    visibleTodos: [],
+                    displayMode: "all",
                 };
+            },
+            computed: {
+                completedCount() {
+                  return this.todos.filter(x => x.completed).length;
+                }
             },
             methods: {
                 add() {
                     this.todos.push({ label: this.newTodoLabel, completed: false });
                     this.newTodoLabel = "";
+                    this.determineVisibleTodos();
                 },
                 remove(todo) {
                     this.todos = this.todos.filter(x => x !== todo);
+                    this.determineVisibleTodos();
+                },
+                determineVisibleTodos() {
+                    if (this.displayMode === "all") {
+                      this.visibleTodos = this.todos;
+                    } else if (this.displayMode === "done") {
+                      this.visibleTodos = this.todos.filter(x => x.completed);
+                    } else if (this.displayMode === "notfinished") {
+                      this.visibleTodos = this.todos.filter(x => !x.completed);
+                    }
+                },
+                setDisplayMode(mode) {
+                  this.displayMode = mode;
+                  this.determineVisibleTodos();
                 },
             }
         });
@@ -99,7 +121,7 @@
             methods: {
                 toggleCompleted() {
                     this.value.completed = !this.value.completed;
-                    console.log(`${this.value.label} has been changed to ${this.value.completed}`);
+                    this.$parent.determineVisibleTodos();
                 },
                 remove() {
                     this.$parent.remove(this.value);
