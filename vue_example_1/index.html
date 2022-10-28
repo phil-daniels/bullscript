@@ -9,6 +9,10 @@
             margin-bottom: 10px !important;
         }
 
+        .margin-left-10 {
+            margin-left: 10px;
+        }
+
         .cursor-pointer {
             cursor: pointer;
         }
@@ -17,6 +21,19 @@
             height: 64px;
             color: #4a4a4a;
             padding-left: 24px;
+            border-top-style: hidden;
+            border-right-style: hidden;
+            border-left-style: hidden;
+            border-bottom: 2px solid #eee;
+            border-radius: 0px;
+            text-shadow: none;
+            box-shadow: none;
+        }
+
+        .todo-input:focus {
+            outline: none;
+            border-bottom: 2px solid #00d1b2;
+            box-shadow: none;
         }
     </style>
     <script>
@@ -33,6 +50,16 @@
                             <template v-for="todo in todos">
                                 <Todo :value="todo"/>
                             </template>
+                            <div class="columns">
+                                <div class="column has-text-left is-flex is-vcentered">
+                                  ok
+                                </div>
+                                <div class="column is-three-quarters has-text-right">
+                                  <button class="button is-light margin-left-10">All</button>
+                                  <button class="button is-light margin-left-10">Done</button>
+                                  <button class="button is-light margin-left-10">Not Finished</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
