@@ -13,6 +13,12 @@ const jsKeywordsToEscape = [
   `delete`
 ];
 
+const ComponentPart = {
+  TEMPLATE,
+  COMPUTED,
+  METHODS
+};
+
 module.exports = tokens => {
   const parser = createParser(tokens);
   const eof = parser.eof.bind(parser);
@@ -29,7 +35,8 @@ module.exports = tokens => {
 
   let isComponentFile = false;
   let defaultMode = Mode.BROWSER;
-  let component = `main.bs`;
+  let defaultComponent = `main.bs`;
+  let defaultComponentPart = ComponentPart.TEMPLATE;
   let browserComponentCode = {};
   let serverCode = ``;
   let serverInitCode = ``;
@@ -41,13 +48,16 @@ module.exports = tokens => {
   }
   generateBlockContents();
   const browserCode = `
-    ${Objects.entries(browserComponentCode).}
+    ${Objects.entries(browserComponentCode).map(([name, code]) => `
+      "${name}":{${Object.entries(code).map(([partName, code]) => `
+        "${partName}":{${code}},
+      }`)}
+    `)}
   `;
   return {browserCode, serverCode, serverInitCode, databaseCode};
 
   function generateBlockContents(...terminators) {
     parser;
-    const blockCode = code();
     let terminated = false;
     while (!eof() && !terminated) {
       const statementCode = generateStatement();
