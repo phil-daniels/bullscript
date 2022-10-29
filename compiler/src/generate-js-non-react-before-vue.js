@@ -27,23 +27,15 @@ module.exports = tokens => {
   const skipRequired = parser.skipRequired.bind(parser);
   const asString = parser.asString.bind(parser);
 
-  let isComponentFile = false;
+  let isComponent = false;
   let defaultMode = Mode.BROWSER;
-  let component = `main.bs`;
-  let browserComponentCode = {};
-  let serverCode = ``;
-  let serverInitCode = ``;
-  let databaseCode = ``;
 
   if (is(`identifier`) && isValue(`component`)) {
     isComponent = true;
     skip(2); // `component` statementend
   }
-  generateBlockContents();
-  const browserCode = `
-    ${Objects.entries(browserComponentCode).}
-  `;
-  return {browserCode, serverCode, serverInitCode, databaseCode};
+  const {browser, server, serverInit} = generateBlockContents(); // keep only the js
+  return {browser, server, serverInit};
 
   function generateBlockContents(...terminators) {
     parser;
@@ -548,34 +540,24 @@ module.exports = tokens => {
     return defaultCode(`(`, ...expressions, `)`);
   }
 
-  function defaultComponentCode(...values) {
-
-  }
-
-  function defaultCode(...values) {
-    return code(defaultMode, null, ...values);
-  }
-
-  function code(mode, component, ...values) {
-    const myCode = {
-      browser: {},
-      server: ``,
-      serverInit: ``,
-      database: ``,
-      add: function(value) {
-        if (typeof value === `string`) {
-          if (mode === `browser`) {
-            myCode.browser[component] += str;
-          } else {
-            myCode[mode] += str;
-          }
-        } else {
-          myCode.append(value);
-        }
+  function code(browser = ``, server = ``, serverInit = ``, database = ``, browserBlockVars = [],
+      serverBlockVars = [], serverInitBlockVars = []) {
+    return {
+      browser,
+      server,
+      serverInit,
+      database,
+      browserBlockVars,
+      serverBlockVars,
+      serverInitBlockVars,
+      append: function(otherCode) {
         this.browser += otherCode.browser;
         this.server += otherCode.server;
         this.serverInit += otherCode.serverInit;
         this.database += otherCode.database;
+        pushAll(this.browserBlockVars, otherCode.browserBlockVars);
+        pushAll(this.serverBlockVars, otherCode.serverBlockVars);
+        pushAll(this.serverInitBlockVars, otherCode.serverInitBlockVars);
       },
       prependIfExists: function(type, str) {
         const existingValue = this[type];
@@ -586,9 +568,6 @@ module.exports = tokens => {
         if (existingValue) this[type] = existingValue + str;
       }
     };
-    for (let value of values) {
-      
-    }
   }
 
   function defaultCode(...args) {
