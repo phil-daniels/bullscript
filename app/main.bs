@@ -1,7 +1,13 @@
 component
 
+style url "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css"
+
 state newTodoLabel = ""
 state todos = []
+state visibleTodos = []
+state displayMode = "all"
+
+var completedCount = (todos | filter _.completed).size;
 
 fn add() ->
    newTodoLabel = ""

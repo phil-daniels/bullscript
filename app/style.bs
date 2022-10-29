@@ -1,0 +1,29 @@
+var marginBottom10 = style "
+   margin-bottom: 10px !important;
+"
+var marginLeft10 = style "
+   margin-left: 10px;
+"
+
+var cursorPointer = style "
+   cursor: pointer;
+"
+
+var todoInput = style "
+   height: 64px;
+   color: #4a4a4a;
+   padding-left: 24px;
+   border-top-style: hidden;
+   border-right-style: hidden;
+   border-left-style: hidden;
+   border-bottom: 2px solid #f0f0f0;
+   border-radius: 0px;
+   text-shadow: none;
+   box-shadow: none;
+"
+
+var todoInput = style:focus "
+   outline: none;
+   border-bottom: 2px solid #00d1b2;
+   box-shadow: none;
+"
