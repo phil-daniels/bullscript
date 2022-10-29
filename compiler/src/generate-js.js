@@ -60,14 +60,14 @@ module.exports = tokens => {
     parser;
     let terminated = false;
     while (!eof() && !terminated) {
-      const statementCode = generateStatement();
-      statementCode.prependIfExists(`browser`, `$ => `);
-      statementCode.prependIfExists(`server`, `$ => `);
-      statementCode.prependIfExists(`serverInit`, `$ => `);
-      statementCode.appendIfExists(`browser`, `,`);
-      statementCode.appendIfExists(`server`, `,`);
-      statementCode.appendIfExists(`serverInit`, `,`);
-      blockCode.append(statementCode);
+      generateStatement();
+      // statementCode.prependIfExists(`browser`, `$ => `);
+      // statementCode.prependIfExists(`server`, `$ => `);
+      // statementCode.prependIfExists(`serverInit`, `$ => `);
+      // statementCode.appendIfExists(`browser`, `,`);
+      // statementCode.appendIfExists(`server`, `,`);
+      // statementCode.appendIfExists(`serverInit`, `,`);
+      // blockCode.append(statementCode);
       if (!is(`statementend`)) {
         die(`expected statement end`);
       }
@@ -79,22 +79,22 @@ module.exports = tokens => {
       if (terminators.some(x => is(x))) terminated = true;
     }
 
-    function buildBlock(blockCode, type) {
-      const blockVars = blockCode[`${type}BlockVars`];
-      if (!blockCode[type] && blockVars.length === 0) return;
-      blockCode[type] = `
-        ${isComponent ? `return bs.children($children => {` : ``}
-        ${blockVars.length > 0 ? `let ${blockVars.join(`,`)};` : ``}
-        ${!isComponent ? `return ` : ``}bs.pipe($,
-        ${blockCode[type]}
-        )
-        ${isComponent ? `});` : ``}
-      `
-    }
+    // function buildBlock(blockCode, type) {
+    //   const blockVars = blockCode[`${type}BlockVars`];
+    //   if (!blockCode[type] && blockVars.length === 0) return;
+    //   blockCode[type] = `
+    //     ${isComponent ? `return bs.children($children => {` : ``}
+    //     ${blockVars.length > 0 ? `let ${blockVars.join(`,`)};` : ``}
+    //     ${!isComponent ? `return ` : ``}bs.pipe($,
+    //     ${blockCode[type]}
+    //     )
+    //     ${isComponent ? `});` : ``}
+    //   `
+    // }
 
-    buildBlock(blockCode, `browser`);
-    buildBlock(blockCode, `server`);
-    buildBlock(blockCode, `serverInit`);
+    // buildBlock(blockCode, `browser`);
+    // buildBlock(blockCode, `server`);
+    // buildBlock(blockCode, `serverInit`);
     return blockCode;
   }
 

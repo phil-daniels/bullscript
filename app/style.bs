@@ -1,7 +1,8 @@
-style .margin-bottom-10 "margin-bottom: 10px !important;"
-style .margin-left-10 "margin-left: 10px;"
-style .cursor-pointer "cursor: pointer;"
-style .todo-input .input .margin-bottom-10 `"
+style .margin-bottom-10 "margin-bottom: 10px !important"
+style .margin-left-10 "margin-left: 10px"
+style .cursor-pointer "cursor: pointer"
+style .line-through "text-decoration: line-through"
+style .todo-input .input, .margin-bottom-10, `"
    height: 64px;
    color: #4a4a4a;
    padding-left: 24px;
@@ -13,10 +14,8 @@ style .todo-input .input .margin-bottom-10 `"
    text-shadow: none;
    box-shadow: none;
 "`
-style .todo-input :focus `"
+style .todo-input, :focus, `"
    outline: none;
    border-bottom: 2px solid #00d1b2;
    box-shadow: none;
 "`
-style .root-columns .columns .is-centered
-style .root-column .column .is-half .has-text-centered
