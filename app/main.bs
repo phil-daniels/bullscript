@@ -1,6 +1,7 @@
 component
 
 style url "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css"
+style ./style.bs
 
 state newTodoLabel = ""
 state todos = []
@@ -9,15 +10,55 @@ state displayMode = "all"
 
 var completedCount = (todos | filter _.completed).size;
 
+fn determineVisibleTodos() ->
+   visibleTodos = `
+      if (displayMode == "all")
+         todos
+      else if (displayMode == "done")
+         todos | filter _.completed
+      else if (displayMode == "notfinished")
+         todos | filter !_.completed
+   `
+},
+
 fn add() ->
-   newTodoLabel = ""
    todos += {label: newTodoLabel, completed: false}
+   newTodoLabel = ""
+   determineVisibleTodos()
 
-fn delete(todo) ->
+fn remove(todo) ->
    todos.remove(todo)
+   determineVisibleTodos()
 
-fn markComplete(todo) ->
-   todo.completed = true
+setDisplayMode(mode) {
+   displayMode = mode
+   determineVisibleTodos()
+
+:div .container
+   :div .columns, .is-centered
+      :div .column, .is-half, .has-text-centered
+      :h1 .title, .is-1, "todos"
+      :input .todo-input, *newTodoLabel, keyup[Enter]: add
+      for (todo in visibleTodos)
+         :div lass="todoClass + ' notification margin-bottom-10 cursor-pointer has-text-left'" @click="toggleCompleted(value)">
+                    <button class="delete" @click.stop="remove(value)"></button>
+                    <span :style="todoStyle">{{value.label}}</span>
+                </div>
+                                <Todo :value="todo"/>
+                            </template>
+                            <div class="columns is-vcentered">
+                                <div class="column has-text-left">
+                                    <b>{{completedCount}}</b> done of <b>{{todos.length}}</b>
+                                </div>
+                                <div class="column is-three-quarters has-text-right">
+                                  <button class="button margin-left-10" @click="setDisplayMode('all')" :class="{'is-primary is-dark' : this.displayMode === 'all'}">All</button>
+                                  <button class="button margin-left-10" @click="setDisplayMode('done')" :class="{'is-primary is-dark' : this.displayMode === 'done'}">Done</button>
+                                  <button class="button margin-left-10" @click="setDisplayMode('notfinished')"  :class="{'is-primary is-dark' : this.displayMode === 'notfinished'}">Not Finished</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
 :h1 "todos"
 :input *newTodoLabel, onEnter: add

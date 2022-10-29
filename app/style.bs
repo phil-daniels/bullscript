@@ -1,15 +1,7 @@
-var marginBottom10 = style "
-   margin-bottom: 10px !important;
-"
-var marginLeft10 = style "
-   margin-left: 10px;
-"
-
-var cursorPointer = style "
-   cursor: pointer;
-"
-
-var todoInput = style "
+style .margin-bottom-10 "margin-bottom: 10px !important;"
+style .margin-left-10 "margin-left: 10px;"
+style .cursor-pointer "cursor: pointer;"
+style .todo-input .input .margin-bottom-10 `"
    height: 64px;
    color: #4a4a4a;
    padding-left: 24px;
@@ -20,10 +12,11 @@ var todoInput = style "
    border-radius: 0px;
    text-shadow: none;
    box-shadow: none;
-"
-
-var todoInput = style:focus "
+"`
+style .todo-input :focus `"
    outline: none;
    border-bottom: 2px solid #00d1b2;
    box-shadow: none;
-"
+"`
+style .root-columns .columns .is-centered
+style .root-column .column .is-half .has-text-centered
