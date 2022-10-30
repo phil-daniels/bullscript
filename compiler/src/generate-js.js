@@ -50,25 +50,47 @@ function generateFile(file, isMainFile, filePathToTokens) {
   let defaultComponentPart = ComponentPart.TEMPLATE;
   let browserComponentCode = {};
   let browserHeadCode = ``;
+  let browserInitCode = ``;
   let serverCode = ``;
   let serverInitCode = ``;
   let databaseCode = ``;
-  const defaultBrowserAppender = str => browserComponentCode[defaultComponent][defaultComponentPart] += str;
-  let defaultAppender = defaultBrowserAppender;
+  const defaultBrowserComponentAppender = str => browserComponentCode[defaultComponent][defaultComponentPart] += str;
+  const defaultBrowserInitAppender = str => browserInitCode += str;
+  let defaultAppender = defaultBrowserInitAppender;
 
   let fileTitle;
   if (is(`identifier`) && isValue(`component`)) {
     isComponent = true;
     skip(); // `component` statementend
     if (isMainFile) {
-      defaultAppender = str => fileTitle = str.replaceAll(`"`, ``);
-      generateStringExpression();
-      defaultAppender = defaultBrowserAppender;
+      const titleAppender = str => fileTitle = str.replaceAll(`"`, ``);
+      withAppender(titleAppender, () => {
+        generateStringExpression();
+      });
     }
+    defaultAppender = defaultBrowserComponentAppender;
   }
+  generateBlockContents();
   let browserCode = ``;
   if (isComponent) {
-
+    browserCode = `
+      app.component("bs-component-${file.path.replaceAll(`/`, `--`).replaceAll(`.`, `-`)}", {
+        template: "${browserComponentCode[`template`].replaceAll(`"`, `\\"`)}",
+        data() {
+            return {
+                ${browserComponentCode[`data`]}
+            };
+        },
+        computed: {
+            ${browserComponentCode[`computed`]}
+        },
+        methods: {
+            ${browserComponentCode[`methods`]}
+        }
+      });
+    `
+  } else {
+    browserCode = `$bs.modules.["${file.path.replaceAll(`"`, `\\"`)}"] = () => {}`;
   }
   appBrowserCode += `$bs.modules.["${file.path.replaceAll(`"`, `\\"`)}"] = function($props) {let $ = null;`;
   generateBlockContents();
@@ -701,6 +723,13 @@ function generateFile(file, isMainFile, filePathToTokens) {
       first = false;
       blockFn();
     }
+  }
+
+  function withAppender(newAppender, fn) {
+    const savedAppender = appender;
+    appender = newAppender;
+    fn();
+    append = savedAppender;
   }
 
   function pushAll(arr, items) {

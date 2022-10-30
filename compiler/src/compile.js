@@ -35,7 +35,6 @@ function generateAppCode(files) {
       filePathToTokens[file.path] = tokens;
     }
     for (const file of files) {
-      appBrowserCode += `$bs.modules.["${file.path.replaceAll(`"`, `\\"`)}"] = function($props) {let $ = null;`;
       const code = generateJs(tokens, filePathToTokens);
       appServerInitCode += code.serverInit;
       appServerRequestCode += code.serverRequest;
