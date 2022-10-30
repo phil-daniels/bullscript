@@ -1,6 +1,7 @@
 const createParser = require(`./create-parser`);
 
 const IDENTIFIER = /^[a-zA-Z_][a-zA-Z_0-9]*/;
+const HEAD_COMPONENT = `~~HEAD~~`;
 
 const Mode = {
   BROWSER: `browser`,
@@ -19,7 +20,17 @@ const ComponentPart = {
   METHODS
 };
 
-module.exports = (tokens, allFilesToTokens) => {
+module.exports = (files, filePathToTokens) => {
+  let title;
+  for (const file of files) {
+    let isMainFile = file.path === `main.bs`;
+    const {fileTitle} = generateFile(file, isMainFile, filePathToTokens);
+    title = fileTitle;
+  }
+  return {title};
+};
+
+function generateFile(file, isMainFile, filePathToTokens) {
   const parser = createParser(tokens);
   const eof = parser.eof.bind(parser);
   const is = parser.is.bind(parser);
@@ -38,14 +49,28 @@ module.exports = (tokens, allFilesToTokens) => {
   let defaultComponent = `main.bs`;
   let defaultComponentPart = ComponentPart.TEMPLATE;
   let browserComponentCode = {};
+  let browserHeadCode = ``;
   let serverCode = ``;
   let serverInitCode = ``;
   let databaseCode = ``;
+  const defaultBrowserAppender = str => browserComponentCode[defaultComponent][defaultComponentPart] += str;
+  let defaultAppender = defaultBrowserAppender;
 
+  let fileTitle;
   if (is(`identifier`) && isValue(`component`)) {
     isComponent = true;
-    skip(2); // `component` statementend
+    skip(); // `component` statementend
+    if (isMainFile) {
+      defaultAppender = str => fileTitle = str.replaceAll(`"`, ``);
+      generateStringExpression();
+      defaultAppender = defaultBrowserAppender;
+    }
   }
+  let browserCode = ``;
+  if (isComponent) {
+
+  }
+  appBrowserCode += `$bs.modules.["${file.path.replaceAll(`"`, `\\"`)}"] = function($props) {let $ = null;`;
   generateBlockContents();
   const browserCode = `
     ${Objects.entries(browserComponentCode).map(([name, code]) => `
