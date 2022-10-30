@@ -101,7 +101,7 @@ function generateFile(file, isMainFile, filePathToTokens) {
       }`)}
     `)}
   `;
-  return {browserCode, serverCode, serverInitCode, databaseCode};
+  return {fileTitle, browserCode, serverCode, serverInitCode, databaseCode};
 
   function generateBlockContents(...terminators) {
     parser;
