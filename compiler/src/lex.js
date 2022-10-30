@@ -160,6 +160,10 @@ module.exports = input => {
         create(`plus`);
       } else if (matches(`-`)) {
         create(`dash`);
+      } else if (matches(`/`)) {
+        create(`slash`);
+      } else if (matches(`|`)) {
+        create(`pipe`);
       } else if (matches(`>`)) {
         create(`greaterthan`);
       } else if (matches(`.`)) {

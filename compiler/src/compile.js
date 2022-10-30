@@ -29,12 +29,15 @@ function generateAppCode(files) {
   let appServerRequestCode = "";
   let appBrowserCode = "";
   const filePathToTokens = {};
+  let currentFile;
   try {
     for (const file of files) {
+      currentFile = file;
       const tokens = lex(file.contents);
       filePathToTokens[file.path] = tokens;
     }
     for (const file of files) {
+      currentFile = file;
       const code = generateJs(tokens, filePathToTokens);
       appServerInitCode += code.serverInit;
       appServerRequestCode += code.serverRequest;
@@ -46,11 +49,10 @@ function generateAppCode(files) {
       console.error(`UNEXPECTED ERROR OCURRED`);
       console.error(e.stack);
     } else {
-      writeError(file, e);
+      writeError(currentFile, e);
     }
+    process.exit(1);
   }
-  process.exit(1);
-}
   return {serverInitCode: appServerInitCode, serverRequestCode: appServerRequestCode, browserCode: appBrowserCode};
 }
 

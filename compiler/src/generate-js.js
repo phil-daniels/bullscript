@@ -3,22 +3,9 @@ const createParser = require(`./create-parser`);
 const IDENTIFIER = /^[a-zA-Z_][a-zA-Z_0-9]*/;
 const HEAD_COMPONENT = `~~HEAD~~`;
 
-const Mode = {
-  BROWSER: `browser`,
-  SERVER: `server`,
-  SERVER_INIT: `serverInit`,
-  DATABASE: `database`,
-};
-
 const jsKeywordsToEscape = [
   `delete`
 ];
-
-const ComponentPart = {
-  TEMPLATE,
-  COMPUTED,
-  METHODS
-};
 
 module.exports = (files, filePathToTokens) => {
   let title;
@@ -90,17 +77,12 @@ function generateFile(file, isMainFile, filePathToTokens) {
       });
     `
   } else {
-    browserCode = `$bs.modules.["${file.path.replaceAll(`"`, `\\"`)}"] = () => {}`;
+    browserCode = `
+      $bs.modules.["${file.path.replaceAll(`"`, `\\"`)}"] = () => {
+        ${browserInitCode}
+      };
+    `;
   }
-  appBrowserCode += `$bs.modules.["${file.path.replaceAll(`"`, `\\"`)}"] = function($props) {let $ = null;`;
-  generateBlockContents();
-  const browserCode = `
-    ${Objects.entries(browserComponentCode).map(([name, code]) => `
-      "${name}":{${Object.entries(code).map(([partName, code]) => `
-        "${partName}":{${code}},
-      }`)}
-    `)}
-  `;
   return {fileTitle, browserCode, serverCode, serverInitCode, databaseCode};
 
   function generateBlockContents(...terminators) {
@@ -196,7 +178,7 @@ function generateFile(file, isMainFile, filePathToTokens) {
       skip(); // dot
       skip(); // slash
       generateFileContents();
-      !!!!!!!!!!!! replace tokens with copy of tokens from imported file?
+      //!!!!!!!!!!!! replace tokens with copy of tokens from imported file?
     } else if (is(`stringstart`)) {
 
     } else {
@@ -675,21 +657,21 @@ function generateFile(file, isMainFile, filePathToTokens) {
     return buildCode(defaultMode, args);
   }
 
-  function browserCode(...args) {
-    return buildCode(Mode.BROWSER, args);
-  }
+  // function browserCode(...args) {
+  //   return buildCode(Mode.BROWSER, args);
+  // }
 
-  function serverCode(...args) {
-    return buildCode(Mode.SERVER, args);
-  }
+  // function serverCode(...args) {
+  //   return buildCode(Mode.SERVER, args);
+  // }
 
-  function serverInitCode(...args) {
-    return buildCode(Mode.SERVER_INIT, args);
-  }
+  // function serverInitCode(...args) {
+  //   return buildCode(Mode.SERVER_INIT, args);
+  // }
 
-  function databaseCode(...args) {
-    return buildCode(Mode.DATABASE, args);
-  }
+  // function databaseCode(...args) {
+  //   return buildCode(Mode.DATABASE, args);
+  // }
 
   function buildCode(mode, values) {
     const myCode = code();
