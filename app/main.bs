@@ -11,14 +11,13 @@ state displayMode = "all"
 var completedCount = (todos | filter _.completed).size;
 
 fn determineVisibleTodos() ->
-   visibleTodos = `
+   visibleTodos = \
       if (displayMode == "All")
          todos
       else if (displayMode == "Done")
          todos | filter _.completed
       else if (displayMode == "Not Finished")
          todos | filter !_.completed
-   `
 },
 
 fn add() ->

@@ -1,5 +1,6 @@
 module.exports = [
   `asterisk`,
+  `backslash`,
   `blockend`,
   `blockstart`,
   `bracketend`,
@@ -10,6 +11,7 @@ module.exports = [
   `curlyend`,
   `dot`,
   `equals`,
+  `exclamationmark`,
   `greaterthan`,
   `dash`,
   `identifier`,

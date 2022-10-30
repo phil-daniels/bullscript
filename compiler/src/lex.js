@@ -6,7 +6,8 @@ const createLexer = require(`./create-lexer`);
 const IDENTIFIER = /^[a-zA-Z_][a-zA-Z_0-9]*/;
 const SPACES = /^[ ]+/;
 const SPACES_THEN_IDENTIFIER = /^[ ]+[a-zA-Z_][a-zA-Z_0-9]*/;
-const NUMBER = /^[0-9]+/
+const NUMBER = /^[0-9]+/;
+const WHITESPACE = /\s+/;
 
 const BOUNDRIES = [`\``, `"`, `(`, `)`, `{`, `}`, '[', `]`, `/*`];
 
@@ -110,38 +111,17 @@ module.exports = input => {
     // 2) skip whitespace
     // 3) convertIndent
     // 4) will return on deindent, then continue to 2) until close backtick
-    const myIndent = parentIndent + 3;
-    let deindent = false;
-    const startOutputCount = lexer.output.length;
-    while (!eof() && (!terminators || !is(...terminators)) && !deindent) {
-      let preStatementOutputCount = lexer.output.length;
-      while(!eof() && !is(`\n`)&& !is(`\r\n`)) {
-        lexUntil(`\r\n`, `\n`, ...BOUNDRIES);
-        if (!is(`\n`) && !is(`\r\n`)) {
-          lexAtBoundry();
-        }
-      }
-      if (!eof()) {
-        if (is(`\r`)) skip();
-        skip(); // newline
-        if (lexer.output.length > preStatementOutputCount) {
-          const indent = regexLength(SPACES);
-          if (indent === myIndent) {
-            create(`statementend`);
-          } else if (indent === myIndent + 3) {
-            create(`blockstart`);
-            convertIndent(myIndent);
-            create(`blockend`);
-            create(`statementend`);
-          } else if (indent < myIndent && (indent % 3 === 0)) {
-            create(`statementend`);
-            deindent = true;
-          } else {
-            die(`invalid indent`);
-          }
-        } // else is blank line, ignore
-      }
+    /*
+    skip(); // backtick
+    if (is(`\n`)) {
+      skip();
     }
+    while (!eof() && !is(`backtick`)) {
+      let whitespaceLength = regexLength(WHITESPACE);
+      skip(whitespaceLength);
+      convertIndent();
+    }
+    */
   }
 
   function convertString() {
@@ -202,8 +182,12 @@ module.exports = input => {
         create(`dash`);
       } else if (matches(`/`)) {
         create(`slash`);
+      } else if (matches(`\\`)) {
+        create(`backslash`);
       } else if (matches(`|`)) {
         create(`pipe`);
+      } else if (matches(`!`)) {
+        create(`exclamationmark`);
       } else if (matches(`>`)) {
         create(`greaterthan`);
       } else if (matches(`.`)) {

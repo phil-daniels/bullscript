@@ -64,6 +64,7 @@ module.exports = input => {
       delete this.matchValue;
     },
     skip: function(num = 1) {
+      if (num === 0) return;
       if (this.eof()) throw new Error(`unexpected EOF`);
       this.eatenInput += this.input.substring(0, num);
       this.input = this.input.substring(num);
