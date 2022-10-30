@@ -19,7 +19,7 @@ const ComponentPart = {
   METHODS
 };
 
-module.exports = tokens => {
+module.exports = (tokens, allFilesToTokens) => {
   const parser = createParser(tokens);
   const eof = parser.eof.bind(parser);
   const is = parser.is.bind(parser);
@@ -125,6 +125,8 @@ module.exports = tokens => {
         return generateFunctionDeclaration();
       } else if (isValue(`for`)) {
         return generateForLoopStatement();
+      } else if (isValue(`style`)) {
+        return generateStyleStatement();
       } else {
         return generateExpressionBasedStatement();
       }
@@ -132,6 +134,27 @@ module.exports = tokens => {
       return generateExpressionBasedStatement();
     }
     die(`could not make statement`);
+  }
+
+  function generateStyleStatement() {
+    skipRequired(`identifier`); // style
+    if (isValue(`url`)) {
+      skip(); // url
+      defaultToBrowserHtmlHeader(() => {
+        code(`<link rel="stylesheet" href="`);
+        generateStringExpression();
+        code(`"/>`);
+      });
+    } else if (is(`dot`) && isAhead(`slash`)) {
+      skip(); // dot
+      skip(); // slash
+      generateFileContents();
+      !!!!!!!!!!!! replace tokens with copy of tokens from imported file?
+    } else if (is(`stringstart`)) {
+
+    } else {
+      die(`expected url, file reference or string`);
+    }
   }
 
   function generateForLoopStatement() {

@@ -12,11 +12,11 @@ var completedCount = (todos | filter _.completed).size;
 
 fn determineVisibleTodos() ->
    visibleTodos = `
-      if (displayMode == "all")
+      if (displayMode == "All")
          todos
-      else if (displayMode == "done")
+      else if (displayMode == "Done")
          todos | filter _.completed
-      else if (displayMode == "notfinished")
+      else if (displayMode == "Not Finished")
          todos | filter !_.completed
    `
 },
@@ -39,31 +39,22 @@ setDisplayMode(mode) {
       :div .column, .is-half, .has-text-centered
       :h1 .title, .is-1, "todos"
       :input .todo-input, *newTodoLabel, keyup[enter]: add
+      // list todos
       for (todo in visibleTodos)
          :div if (todo.completed) .is-primary, .notification, .margin-bottom-10, .cursor-pointer, .has-text-left, click: -> toggleCompleted(todo)
             :button .delete, click[stop]: -> remove(todo)
             :span if (todo.completed) .line-through, todo.label
-               :div .columns, .is-vcentered
-                  :div .column, .has-text-left"
-                     (:b completedCount, " done of ", :b todos.length)
-                  :div .column, .is-three-quarters, .has-text-right
-                     component display-mode-button
-                     :button .button, .margin-left-10, click: -> setDisplayMode("all"), if (displayMode == "all") (.is-primary, .is-dark), "All"
-                     :button .button, .margin-left-10, click: -> setDisplayMode("done"), if (displayMode == "done") (.class="{'is-primary is-dark' : this.displayMode === 'done'}">Done</button>
-                                  <button class="button margin-left-10" @click="setDisplayMode('notfinished')"  :class="{'is-primary is-dark' : this.displayMode === 'notfinished'}">Not Finished</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-:h1 "todos"
-:input *newTodoLabel, onEnter: add
-for (todo in todos)
-   :div
-      :button "Done", onClick: -> markComplete(todo)
-      :"{todo.label}" if (todo.completed) style "text-decoration: line-through"
-      :button "X", onClick: -> delete(todo)
+      :div .columns, .is-vcentered
+         // show count
+         :div .column, .has-text-left"
+            :b completedCount ; " done of " ; :b todos.length
+         // display mode buttons
+         :div .column, .is-three-quarters, .has-text-right
+            component display-mode-button({unnamed: [desc]})
+               :button .button, .margin-left-10, click: -> setDisplayMode(desc), if (displayMode == desc) (.is-primary, .is-dark), desc
+            :display-mode-button "All"
+            :display-mode-button "Done"
+            :display-mode-button "Not Finished"
 
 /*
 component

@@ -28,27 +28,30 @@ function generateAppCode(files) {
   let appServerInitCode = "";
   let appServerRequestCode = "";
   let appBrowserCode = "";
-  for (const file of files) {
-    const moduleName = `$${file.path.replaceAll(`/`, `_`).replaceAll(`.`, `$`)}`;
-    appBrowserCode += `const ${moduleName} = function($props) {let $ = null;`;
-    let code;
-    try {
+  const allFilesToTokens = {};
+  try {
+    for (const file of files) {
       const tokens = lex(file.contents);
-      code = generateJs(tokens);
-    } catch(e) {
-      if (e instanceof Error) {
-        console.error(`UNEXPECTED ERROR OCURRED`);
-        console.error(e.stack);
-      } else {
-        writeError(file, e);
-      }
-      process.exit(1);
+      allFilesToTokens[file.path] = tokens;
     }
-    appServerInitCode += code.serverInit;
-    appServerRequestCode += code.serverRequest;
-    appBrowserCode += code.browser;
-    appBrowserCode += `};`;
+    for (const file of files) {
+      appBrowserCode += `$bs.modules.["${file.path.replaceAll(`"`, `\\"`)}"] = function($props) {let $ = null;`;
+      const code = generateJs(tokens, allFilesToTokens);
+      appServerInitCode += code.serverInit;
+      appServerRequestCode += code.serverRequest;
+      appBrowserCode += code.browser;
+      appBrowserCode += `};`;
+    }
+  } catch(e) {
+    if (e instanceof Error) {
+      console.error(`UNEXPECTED ERROR OCURRED`);
+      console.error(e.stack);
+    } else {
+      writeError(file, e);
+    }
   }
+  process.exit(1);
+}
   return {serverInitCode: appServerInitCode, serverRequestCode: appServerRequestCode, browserCode: appBrowserCode};
 }
 
