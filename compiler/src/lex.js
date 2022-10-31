@@ -25,7 +25,7 @@ module.exports = input => {
   const create = lexer.create.bind(lexer);
   const eat = lexer.eat.bind(lexer);
 
-  debug(`lexing input ${input}`);
+  debug(`lexing input`, input);
   while (!eof()) {
     convertIndent(-3, null); // start at negative 1 indent
   }
@@ -33,6 +33,7 @@ module.exports = input => {
 
   function convertIndent(parentIndent, terminators = [`}`, `)`, `]`]) {
     lexer;
+    debug(`INDENT MODE`);
     const myIndent = parentIndent + 3;
     let deindent = false;
     const startOutputCount = lexer.output.length;
@@ -68,6 +69,7 @@ module.exports = input => {
   }
 
   function convertParenOrCurlyOrBracket(terminator) {
+    debug(`PAREN/CURLY/BRACKET MODE`);
     while (!eof() && !is(terminator)) {
       lexUntil(...BOUNDRIES);
       lexAtBoundry();
@@ -110,24 +112,23 @@ module.exports = input => {
 
   function convertBackticks() {
     lexer;
+    console.log(`BACKTICK MODE`);
     // 1) skip backtick
     // 2) skip whitespace
     // 3) convertIndent
     // 4) will return on deindent, then continue to 2) until close backtick
-    /*
     skip(); // backtick
-    if (is(`\n`)) {
-      skip();
-    }
+    if (is(`\r`)) skip();
+    if (is(`\n`)) skip();
     while (!eof() && !is(`backtick`)) {
       let whitespaceLength = regexLength(WHITESPACE);
       skip(whitespaceLength);
-      convertIndent();
+      convertIndent(whitespaceLength - 3);
     }
-    */
   }
 
   function convertString() {
+    debug(`STRING MODE`);
     create(`stringstart`);
     skip(); // "
     let literal = "";
@@ -201,8 +202,14 @@ module.exports = input => {
     }
   }
 
-  function debug(msg) {
-    if (debug) console.log(msg);
+  function debug(msg, code) {
+    let truncatedCode = ``;
+    if (code) {
+      truncatedCode = code.split(`\n`, 1)[0].replaceAll(`\r`, ``);
+      if (truncatedCode.length < code.length) truncatedCode += `...`;
+      truncatedCode = `: \`${truncatedCode}\``;
+    }
+    if (debug) console.log(msg + truncatedCode);
   }
 
   function die(msg) {
