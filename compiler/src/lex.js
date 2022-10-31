@@ -30,7 +30,7 @@ module.exports = input => {
   debug(`lexing input`, input);
   debug(`\`[~]${input.substring(0, 30).replaceAll(`\r`, `\\r`).replaceAll(`\n`, `\\n`)}\``);
   while (!eof()) {
-    convertIndent(-3, null); // start at negative 1 indent
+    convertIndent(-3, []); // start at negative 1 indent
   }
   return lexer.output;
 
@@ -44,14 +44,15 @@ module.exports = input => {
       let preStatementOutputCount = lexer.output.length;
       while(!eof() && !is(`\n`) && !is(`\r\n`)) {
         lexUntil(`\r\n`, `\n`, ...BOUNDRIES);
-        if (!is(`\n`) && !is(`\r\n`) && !is(...terminators)) {
+        if (is(...terminators)) break;
+        if (!is(`\n`) && !is(`\r\n`)) {
           lexAtBoundry();
           debug(`INDENT MODE`);
         }
       }
       if (!eof()) {
         if (is(`\r`)) skip();
-        skip(); // newline
+        if (is(`\n`)) skip();
         if (lexer.output.length > preStatementOutputCount) {
           const indent = regexLength(SPACES);
           if (indent === myIndent) {
@@ -139,10 +140,12 @@ module.exports = input => {
     skip(); // backtick
     if (is(`\r`)) skip();
     if (is(`\n`)) skip();
-    while (!eof() && !is(`backtick`)) {
+    while (!eof() && !is(`\``)) {
+      const bookmark = lexer.eatenInput.length;
       let whitespaceLength = regexLength(WHITESPACE);
       skip(whitespaceLength);
       convertIndent(whitespaceLength - 3, [`\``, `)`, `]`, `}`]);
+      if (bookmark === lexer.eatenInput.length) throw new Error(`infinite loop`);
     }
   }
 
