@@ -76,11 +76,12 @@ module.exports = (input, shouldDebug) => {
       return c;
     },
     eatUntil: function(untilFn) {
-      let shouldContinue = untilFn();
+      let shouldStop = untilFn();
       let eaten = ``;
-      while (shouldContinue) {{
+      while (!shouldStop) {{
         eaten += this.input[0];
         this.skip();
+        shouldStop = untilFn();
       }}
       return eaten;s
     }

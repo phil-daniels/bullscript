@@ -9,7 +9,7 @@ const IDENTIFIER = /^[a-zA-Z_][a-zA-Z_0-9]*/;
 const SPACES = /^[ ]+/;
 const SPACES_THEN_IDENTIFIER = /^[ ]+[a-zA-Z_][a-zA-Z_0-9]*/;
 const NUMBER = /^[0-9]+/;
-const WHITESPACE = /\s+/;
+const WHITESPACE = /^\s+/;
 
 const BOUNDRIES = [`\``, `"`, `(`, `)`, `{`, `}`, '[', `]`, `/*`, `./`, `../`];
 
@@ -121,7 +121,7 @@ module.exports = input => {
     debug(`MODULE REFERENCE MODE`);
     const referencesParent = is(`../`);
     skip(); // modulereferencestart || modulereferencestartparent
-    const value = eatUntil(() => !isRegex(WHITESPACE) && !is(BOUNDRIES));
+    const value = eatUntil(() => eof() || isRegex(WHITESPACE) || is(BOUNDRIES));
     if (referencesParent) {
       create(`modulereferencestartparent`, value);
     } else {
