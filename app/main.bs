@@ -11,13 +11,14 @@ state displayMode = "all"
 var completedCount = (todos | filter _.completed).size;
 
 fn determineVisibleTodos() ->
-   visibleTodos = \
+   visibleTodos = `
       if (displayMode == "All")
          todos
       else if (displayMode == "Done")
          todos | filter _.completed
       else if (displayMode == "Not Finished")
          todos | filter !_.completed
+   `
 },
 
 fn add() ->
@@ -33,24 +34,26 @@ setDisplayMode(mode) {
    displayMode = mode
    determineVisibleTodos()
 
-:div .container
-   :div .columns, .is-centered
-      :div .column, .is-half, .has-text-centered
-      :h1 .title, .is-1, "todos"
-      :input .todo-input, *newTodoLabel, keyup[enter]: add
+var myStyle = style .theStyle
+
+:div #container
+   :div #columns, #is-centered
+      :div #column, #is-half, #has-text-centered
+      :h1 #title, #is-1, "todos"
+      :input #todo-input, *newTodoLabel, keyup[enter]: add
       // list todos
       for (todo in visibleTodos)
-         :div if (todo.completed) .is-primary, .notification, .margin-bottom-10, .cursor-pointer, .has-text-left, click: -> toggleCompleted(todo)
-            :button .delete, click[stop]: -> remove(todo)
-            :span if (todo.completed) .line-through, todo.label
-      :div .columns, .is-vcentered
+         :div if (todo.completed) #is-primary, #notification, #margin-bottom-10, #cursor-pointer, #has-text-left, click: -> toggleCompleted(todo)
+            :button #delete, click[stop]: -> remove(todo)
+            :span if (todo.completed) #line-through, todo.label
+      :div #columns, #is-vcentered
          // show count
-         :div .column, .has-text-left"
+         :div #column, #has-text-left"
             :b completedCount ; " done of " ; :b todos.length
          // display mode buttons
-         :div .column, .is-three-quarters, .has-text-right
+         :div #column, #is-three-quarters, #has-text-right
             component display-mode-button({unnamed: [desc]})
-               :button .button, .margin-left-10, click: -> setDisplayMode(desc), if (displayMode == desc) (.is-primary, .is-dark), desc
+               :button #button, #margin-left-10, click: -> setDisplayMode(desc), if (displayMode == desc) (#is-primary, #is-dark), desc
             :display-mode-button "All"
             :display-mode-button "Done"
             :display-mode-button "Not Finished"

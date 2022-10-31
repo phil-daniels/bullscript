@@ -1,6 +1,6 @@
 const tokenTypes = require("./token-types");
 
-module.exports = input => {
+module.exports = (input, shouldDebug) => {
   return {
     input,
     eatenInput: ``,
@@ -57,6 +57,7 @@ module.exports = input => {
         this.discardMatch();
       }
       if (value) token.value = value;
+      debug(`created ${JSON.stringify(token)}`);
       this.output.push(token);
     },
     discardMatch: function(num = 1) {
@@ -75,4 +76,7 @@ module.exports = input => {
       return c;
     }
   };
+  function debug(msg) {
+    if (shouldDebug) console.log(msg);
+  }
 };

@@ -3,6 +3,8 @@
  */
 const createLexer = require(`./create-lexer`);
 
+const DEBUG = true;
+
 const IDENTIFIER = /^[a-zA-Z_][a-zA-Z_0-9]*/;
 const SPACES = /^[ ]+/;
 const SPACES_THEN_IDENTIFIER = /^[ ]+[a-zA-Z_][a-zA-Z_0-9]*/;
@@ -23,6 +25,7 @@ module.exports = input => {
   const create = lexer.create.bind(lexer);
   const eat = lexer.eat.bind(lexer);
 
+  debug(`lexing input ${input}`);
   while (!eof()) {
     convertIndent(-3, null); // start at negative 1 indent
   }
@@ -196,6 +199,10 @@ module.exports = input => {
         die(`I don't understand this character`);
       }
     }
+  }
+
+  function debug(msg) {
+    if (debug) console.log(msg);
   }
 
   function die(msg) {
