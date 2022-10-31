@@ -18,7 +18,7 @@ module.exports = (input, shouldDebug) => {
       return found;
     },
     isRegex: function(regex) {
-      return this.input.test(regex);
+      return regex.test(this.input);
     },
     eof: function() {
       return this.input.length === 0;
@@ -74,6 +74,15 @@ module.exports = (input, shouldDebug) => {
       const c = this.input[0];
       this.skip();
       return c;
+    },
+    eatUntil: function(untilFn) {
+      let shouldContinue = untilFn();
+      let eaten = ``;
+      while (shouldContinue) {{
+        eaten += this.input[0];
+        this.skip();
+      }}
+      return eaten;s
     }
   };
   function debug(msg) {

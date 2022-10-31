@@ -15,6 +15,8 @@ module.exports = [
   `greaterthan`,
   `dash`,
   `identifier`,
+  `modulereferencestart`,
+  `modulereferencestartparent`,
   `numberliteral`,
   `parenend`,
   `parenstart`,

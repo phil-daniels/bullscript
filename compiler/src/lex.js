@@ -11,11 +11,12 @@ const SPACES_THEN_IDENTIFIER = /^[ ]+[a-zA-Z_][a-zA-Z_0-9]*/;
 const NUMBER = /^[0-9]+/;
 const WHITESPACE = /\s+/;
 
-const BOUNDRIES = [`\``, `"`, `(`, `)`, `{`, `}`, '[', `]`, `/*`];
+const BOUNDRIES = [`\``, `"`, `(`, `)`, `{`, `}`, '[', `]`, `/*`, `./`, `../`];
 
 module.exports = input => {
   const lexer = createLexer(input, DEBUG);
   const is = lexer.is.bind(lexer);
+  const isRegex = lexer.isRegex.bind(lexer);
   const eof = lexer.eof.bind(lexer);
   const matches = lexer.matches.bind(lexer);
   const matchesRegex = lexer.matchesRegex.bind(lexer);
@@ -24,6 +25,7 @@ module.exports = input => {
   const skip = lexer.skip.bind(lexer);
   const create = lexer.create.bind(lexer);
   const eat = lexer.eat.bind(lexer);
+  const eatUntil = lexer.eatUntil.bind(lexer);
 
   debug(`lexing input`, input);
   debug(`\`[~]${input.substring(0, 30).replaceAll(`\r`, `\\r`).replaceAll(`\n`, `\\n`)}\``);
@@ -109,12 +111,27 @@ module.exports = input => {
         }
       }
       if (!eof()) skip(2); // */
+    } else if (is(`./`) || is(`../`)) {
+      convertModuleReference();
+    }
+  }
+
+  function convertModuleReference() {
+    lexer;
+    debug(`MODULE REFERENCE MODE`);
+    const referencesParent = is(`../`);
+    skip(); // modulereferencestart || modulereferencestartparent
+    const value = eatUntil(() => !isRegex(WHITESPACE) && !is(BOUNDRIES));
+    if (referencesParent) {
+      create(`modulereferencestartparent`, value);
+    } else {
+      create(`modulereferencestart`, value);
     }
   }
 
   function convertBackticks() {
     lexer;
-    console.log(`BACKTICK MODE`);
+    debug(`BACKTICK MODE`);
     // 1) skip backtick
     // 2) skip whitespace
     // 3) convertIndent
@@ -131,8 +148,8 @@ module.exports = input => {
 
   function convertString() {
     debug(`STRING MODE`);
-    create(`stringstart`);
     skip(); // "
+    create(`stringstart`);
     let literal = "";
     while (!eof()) {
       while (!eof() && !is(`"`, `{`)) {
