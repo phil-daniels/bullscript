@@ -1,7 +1,7 @@
 const tokenTypes = require("./token-types");
 
 module.exports = (input, shouldDebug) => {
-  return {
+  const lexer = {
     input,
     eatenInput: ``,
     output: [],
@@ -77,6 +77,17 @@ module.exports = (input, shouldDebug) => {
     }
   };
   function debug(msg) {
-    if (shouldDebug) console.log(msg);
+    if (shouldDebug) {
+      const input = lexer.input.replaceAll(`\r`, `\\r`).replaceAll(`\n`, `\\n`);
+      const eatenInput = lexer.eatenInput.replaceAll(`\r`, `\\r`).replaceAll(`\n`, `\\n`);
+      const eatenLength = Math.min(15, eatenInput.length);
+      const length = 30 - eatenLength;
+      console.log(`    \`${
+        eatenInput.substring(eatenInput.length - eatenLength)
+      }[~]${
+        input.substring(0, length)
+      }\` // ${msg}`);
+    }
   }
+  return lexer;
 };

@@ -14,7 +14,7 @@ const WHITESPACE = /\s+/;
 const BOUNDRIES = [`\``, `"`, `(`, `)`, `{`, `}`, '[', `]`, `/*`];
 
 module.exports = input => {
-  const lexer = createLexer(input);
+  const lexer = createLexer(input, DEBUG);
   const is = lexer.is.bind(lexer);
   const eof = lexer.eof.bind(lexer);
   const matches = lexer.matches.bind(lexer);
@@ -26,6 +26,7 @@ module.exports = input => {
   const eat = lexer.eat.bind(lexer);
 
   debug(`lexing input`, input);
+  debug(`\`[~]${input.substring(0, 30).replaceAll(`\r`, `\\r`).replaceAll(`\n`, `\\n`)}\``);
   while (!eof()) {
     convertIndent(-3, null); // start at negative 1 indent
   }
@@ -43,6 +44,7 @@ module.exports = input => {
         lexUntil(`\r\n`, `\n`, ...BOUNDRIES);
         if (!is(`\n`) && !is(`\r\n`)) {
           lexAtBoundry();
+          debug(`INDENT MODE`);
         }
       }
       if (!eof()) {
@@ -153,8 +155,8 @@ module.exports = input => {
         create(`stringcodeblockend`);
       }
     }
-    create(`stringend`);
     skip(); // "
+    create(`stringend`);
   }
 
   function lexUntil(...terminators) {
