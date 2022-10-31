@@ -42,9 +42,9 @@ module.exports = input => {
     const startOutputCount = lexer.output.length;
     while (!eof() && (!terminators || !is(...terminators)) && !deindent) {
       let preStatementOutputCount = lexer.output.length;
-      while(!eof() && !is(`\n`)&& !is(`\r\n`)) {
+      while(!eof() && !is(`\n`) && !is(`\r\n`)) {
         lexUntil(`\r\n`, `\n`, ...BOUNDRIES);
-        if (!is(`\n`) && !is(`\r\n`)) {
+        if (!is(`\n`) && !is(`\r\n`) && !is(...terminators)) {
           lexAtBoundry();
           debug(`INDENT MODE`);
         }
@@ -142,7 +142,7 @@ module.exports = input => {
     while (!eof() && !is(`backtick`)) {
       let whitespaceLength = regexLength(WHITESPACE);
       skip(whitespaceLength);
-      convertIndent(whitespaceLength - 3);
+      convertIndent(whitespaceLength - 3, [`\``, `)`, `]`, `}`]);
     }
   }
 

@@ -83,7 +83,7 @@ module.exports = (input, shouldDebug) => {
         this.skip();
         shouldStop = untilFn();
       }}
-      return eaten;s
+      return eaten;
     }
   };
   function debug(msg) {
