@@ -22,6 +22,7 @@ module.exports = [
   `parenstart`,
   `pipe`,
   `plus`,
+  `pound`,
   `semicolon`,
   `slash`,
   `space`,

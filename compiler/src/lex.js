@@ -145,7 +145,13 @@ module.exports = input => {
       let whitespaceLength = regexLength(WHITESPACE);
       skip(whitespaceLength);
       convertIndent(whitespaceLength - 3, [`\``, `)`, `]`, `}`]);
-      if (bookmark === lexer.eatenInput.length) throw new Error(`infinite loop`);
+      if (bookmark === lexer.eatenInput.length) {
+        if (!eof() && !is(`\``)) {
+          die(`expecting backtick`);
+        } else {
+          throw new Error(`infinite loop`);
+        }
+      }
     }
   }
 
@@ -218,6 +224,8 @@ module.exports = input => {
         create(`greaterthan`);
       } else if (matches(`.`)) {
         create(`dot`);
+      } else if (matches(`#`)) {
+        create(`pound`);
       } else {
         die(`I don't understand this character`);
       }

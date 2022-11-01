@@ -1,4 +1,4 @@
-component "Todos"
+/*component "Todos"
 
 style url "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css"
 style ./style.bs
@@ -18,8 +18,7 @@ fn determineVisibleTodos() ->
          todos | filter _.completed
       else if (displayMode == "Not Finished")
          todos | filter !_.completed
-   `
-},
+   `*/
 
 fn add() ->
    todos += {label: newTodoLabel, completed: false}
@@ -30,11 +29,9 @@ fn remove(todo) ->
    todos.remove(todo)
    determineVisibleTodos()
 
-setDisplayMode(mode) {
+setDisplayMode(mode) ->
    displayMode = mode
    determineVisibleTodos()
-
-var myStyle = style .theStyle
 
 :div #container
    :div #columns, #is-centered
