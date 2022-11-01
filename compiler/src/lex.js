@@ -27,6 +27,8 @@ module.exports = input => {
   const eat = lexer.eat.bind(lexer);
   const eatUntil = lexer.eatUntil.bind(lexer);
 
+  debug(`== START =========================================================`);
+  debug(`== LEXER ======================================`);
   debug(`lexing input`, input);
   debug(`\`[~]${input.substring(0, 30).replaceAll(`\r`, `\\r`).replaceAll(`\n`, `\\n`)}\``);
   while (!eof()) {
@@ -42,20 +44,25 @@ module.exports = input => {
     const startOutputCount = lexer.output.length;
     while (!eof() && (!terminators || !is(...terminators)) && !deindent) {
       let preStatementOutputCount = lexer.output.length;
-      while(!eof() && !is(`\n`) && !is(`\r\n`)) {
-        lexUntil(`\r\n`, `\n`, ...BOUNDRIES);
+      while(!eof() && !is(`\n`) && !is(`\r\n`) && !is(`;`)) {
+        lexUntil(`\r\n`, `\n`, `;`, ...BOUNDRIES);
         if (is(...terminators)) break;
-        if (!is(`\n`) && !is(`\r\n`)) {
+        if (!is(`\n`) && !is(`\r\n`) && !is(`;`)) {
           lexAtBoundry();
           debug(`INDENT MODE`);
         }
       }
       if (!eof()) {
-        if (is(`\r`)) skip();
-        if (is(`\n`)) skip();
+        const semicolonPeer = is(`;`);
+        if (semicolonPeer) {
+          skip(); // semicolon
+        } else {
+          if (is(`\r`)) skip();
+          if (is(`\n`)) skip();
+        }
         if (lexer.output.length > preStatementOutputCount) {
           const indent = regexLength(SPACES);
-          if (indent === myIndent) {
+          if (indent === myIndent || semicolonPeer) {
             create(`statementend`);
           } else if (indent === myIndent + 3) {
             create(`blockstart`);
@@ -83,23 +90,23 @@ module.exports = input => {
 
   function lexAtBoundry() {
     if (is(`(`)) {
+      skip();
       create(`parenstart`);
-      skip();
       convertParenOrCurlyOrBracket(`)`);
-      create(`parenend`);
       if (eat() !== `)`) throw new Error(`expecting ")" at position ${lexer.eatenInput.length}, but was "${lexer.input}"`);
+      create(`parenend`);
     } else if (is(`{`)) {
+      skip();
       create(`curlystart`);
-      skip();
       convertParenOrCurlyOrBracket(`}`);
-      create(`curlyend`);
       if (eat() !== `}`) throw new Error(`expecting "}" at position ${lexer.eatenInput.length}, but was "${lexer.input}"`);
+      create(`curlyend`);
     } else if (is(`[`)) {
-      create(`bracketstart`);
       skip();
+      create(`bracketstart`);
       convertParenOrCurlyOrBracket(`]`);
-      create(`bracketend`);
       if (eat() !== `]`) throw new Error(`expecting "]" at position ${lexer.eatenInput.length}, but was "${lexer.input}"`);
+      create(`bracketend`);
     } else if (is(`"`)) {
       convertString();
     } else if (is(`\``)) {
@@ -112,6 +119,14 @@ module.exports = input => {
         }
       }
       if (!eof()) skip(2); // */
+    } else if (is(`//`)) {
+      while (!eof() && !is(`\n`)) {
+        const c = eat();
+        if (c === `\\`) {
+          skip();
+        }
+      }
+      if (!eof()) skip(); // \n
     } else if (is(`./`) || is(`../`)) {
       convertModuleReference();
     }
@@ -121,12 +136,13 @@ module.exports = input => {
     lexer;
     debug(`MODULE REFERENCE MODE`);
     const referencesParent = is(`../`);
-    skip(); // modulereferencestart || modulereferencestartparent
+    skip(2); // .. or ./
+    if (referencesParent) skip(); // /
     const value = eatUntil(() => eof() || isRegex(WHITESPACE) || is(BOUNDRIES));
     if (referencesParent) {
-      create(`modulereferencestartparent`, value);
+      create(`modulereferenceparent`, value);
     } else {
-      create(`modulereferencestart`, value);
+      create(`modulereference`, value);
     }
   }
 
@@ -153,6 +169,7 @@ module.exports = input => {
         }
       }
     }
+    if (is(`\``)) skip();
   }
 
   function convertString() {

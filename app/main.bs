@@ -1,4 +1,4 @@
-/*component "Todos"
+component "Todos"
 
 style url "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css"
 style ./style.bs
@@ -8,7 +8,7 @@ state todos = []
 state visibleTodos = []
 state displayMode = "all"
 
-var completedCount = (todos | filter _.completed).size;
+var completedCount = (todos | filter _.completed).size
 
 fn determineVisibleTodos() ->
    visibleTodos = `
@@ -18,8 +18,8 @@ fn determineVisibleTodos() ->
          todos | filter _.completed
       else if (displayMode == "Not Finished")
          todos | filter !_.completed
-   `*/
-
+   `
+!!!!!!!!!! Verified to here!!
 fn add() ->
    todos += {label: newTodoLabel, completed: false}
    newTodoLabel = ""
@@ -45,11 +45,11 @@ setDisplayMode(mode) ->
             :span if (todo.completed) #line-through, todo.label
       :div #columns, #is-vcentered
          // show count
-         :div #column, #has-text-left"
+         :div #column, #has-text-left
             :b completedCount ; " done of " ; :b todos.length
          // display mode buttons
          :div #column, #is-three-quarters, #has-text-right
-            component display-mode-button({unnamed: [desc]})
+            component display-mode-button(props, [desc])
                :button #button, #margin-left-10, click: -> setDisplayMode(desc), if (displayMode == desc) (#is-primary, #is-dark), desc
             :display-mode-button "All"
             :display-mode-button "Done"
