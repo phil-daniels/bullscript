@@ -37,17 +37,18 @@ function generateAppCode(files) {
     generateJs(mainFile, files);
   } catch(e) {
     if (e instanceof Error) {
-      console.error(`UNEXPECTED ERROR OCURRED`);
+      console.error(`UNEXPECTED ERROR OCCURRED`);
       console.error(e.stack);
     } else {
-      writeError(currentFile, e);
+      writeError(e);
     }
     process.exit(1);
   }
   return {serverInitCode: appServerInitCode, serverRequestCode: appServerRequestCode, browserCode: appBrowserCode};
 }
 
-function writeError(file, error) {
+function writeError(error) {
+  const file = error.file;
   console.error();
   console.error();
   console.error(`-- ${error.type} ERROR ------------------------------ ${file.name}`);

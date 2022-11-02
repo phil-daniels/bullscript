@@ -819,7 +819,7 @@ function generateFile(file, files) {
   }
 
   function die(msg) {
-    throw {msg, position: parser.eatenInput[parser.eatenInput.length - 1]?.position || 0, type: `PARSING`};
+    throw {msg, position: parser.eatenInput[parser.eatenInput.length - 1]?.position || 0, type: `PARSING`, file};
   }
 
   function escapeJsKeywords(value) {

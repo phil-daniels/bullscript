@@ -262,6 +262,6 @@ module.exports = (file) => {
   }
 
   function die(msg) {
-    throw {msg, position: lexer.eatenInput.length, type: `LEXING`};
+    throw {msg, position: lexer.eatenInput.length, type: `LEXING`, file};
   }
 };
