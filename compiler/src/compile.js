@@ -28,17 +28,15 @@ function generateAppCode(files) {
   let appServerInitCode = "";
   let appServerRequestCode = "";
   let appBrowserCode = "";
-  const filePathToTokens = {};
   let currentFile;
   try {
     for (const file of files) {
       currentFile = file;
-      const tokens = lex(file.contents);
-      filePathToTokens[file.path] = tokens;
+      file.tokens = lex(file.contents);
     }
     for (const file of files) {
       currentFile = file;
-      const code = generateJs(tokens, filePathToTokens);
+      const code = generateJs(file, files);
       appServerInitCode += code.serverInit;
       appServerRequestCode += code.serverRequest;
       appBrowserCode += code.browser;

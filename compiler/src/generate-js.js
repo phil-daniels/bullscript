@@ -7,18 +7,14 @@ const jsKeywordsToEscape = [
   `delete`
 ];
 
-module.exports = (files, filePathToTokens) => {
-  let title;
-  for (const file of files) {
-    let isMainFile = file.path === `main.bs`;
-    const {fileTitle} = generateFile(file, isMainFile, filePathToTokens);
-    title = fileTitle;
-  }
+module.exports = (file, files) => {
+  const isMainFile = file.path === `main.bs`;
+  const {title} = generateFile(file, isMainFile, files);
   return {title};
 };
 
-function generateFile(file, isMainFile, filePathToTokens) {
-  const parser = createParser(tokens);
+function generateFile(file, isMainFile, files) {
+  const parser = createParser(file.tokens);
   const eof = parser.eof.bind(parser);
   const is = parser.is.bind(parser);
   const isValue = parser.isValue.bind(parser);
@@ -32,9 +28,9 @@ function generateFile(file, isMainFile, filePathToTokens) {
   const asString = parser.asString.bind(parser);
 
   let isComponentFile = false;
-  let defaultMode = Mode.BROWSER;
+  let defaultMode = `browser`;
   let defaultComponent = `main.bs`;
-  let defaultComponentPart = ComponentPart.TEMPLATE;
+  let defaultComponentPart = `template`;
   let browserComponentCode = {};
   let browserHeadCode = ``;
   let browserInitCode = ``;
@@ -48,7 +44,7 @@ function generateFile(file, isMainFile, filePathToTokens) {
   let fileTitle;
   if (is(`identifier`) && isValue(`component`)) {
     isComponent = true;
-    skip(); // `component` statementend
+    skip(); // component
     if (isMainFile) {
       const titleAppender = str => fileTitle = str.replaceAll(`"`, ``);
       withAppender(titleAppender, () => {
@@ -556,21 +552,22 @@ function generateFile(file, isMainFile, filePathToTokens) {
   }
 
   function generateStringExpression() {
-    const pieces = code();
+    js(`"`);
     skip(); // `"`
     while (!eof() && (is(`stringliteral`) || is(`stringcodeblockstart`))) {
       if (is(`stringliteral`)) {
-        pieces.append(defaultCode(eatValue()));
+        const value = eatValue();
+        js(value);
       } else {
+        js(`"+(`);
         skip(); // stringcodeblockstart
-        const expression = generateExpression();
+        generateExpression();
+        js(`}+"`);
         skip(); // stringcodeblockend
-        pieces.append(defaultCode(`"+(`, expression, `)+"`));
       }
     }
+    js(`"`);
     skip(); // `"`
-
-    return defaultCode(`"`, pieces, `"`);
   }
 
   function generateListExpression() {
@@ -708,10 +705,10 @@ function generateFile(file, isMainFile, filePathToTokens) {
   }
 
   function withAppender(newAppender, fn) {
-    const savedAppender = appender;
-    appender = newAppender;
+    const savedAppender = defaultAppender;
+    defaultAppender = newAppender;
     fn();
-    append = savedAppender;
+    defaultAppender = savedAppender;
   }
 
   function pushAll(arr, items) {
