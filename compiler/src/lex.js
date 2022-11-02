@@ -11,7 +11,7 @@ const SPACES_THEN_IDENTIFIER = /^[ ]+[a-zA-Z_][a-zA-Z_0-9]*/;
 const NUMBER = /^[0-9]+/;
 const WHITESPACE = /^\s+/;
 
-const BOUNDRIES = [`\``, `"`, `(`, `)`, `{`, `}`, '[', `]`, `/*`, `./`, `../`];
+const BOUNDRIES = [`\``, `"`, `(`, `)`, `{`, `}`, '[', `]`, `/*`, `//`, `./`, `../`];
 
 module.exports = input => {
   const lexer = createLexer(input, DEBUG);
