@@ -19,7 +19,7 @@ fn determineVisibleTodos() ->
       else if (displayMode == "Not Finished")
          todos | filter !_.completed
    `
-!!!!!!!!!! Verified to here!!
+
 fn add() ->
    todos += {label: newTodoLabel, completed: false}
    newTodoLabel = ""

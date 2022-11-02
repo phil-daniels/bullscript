@@ -27,10 +27,11 @@ module.exports = input => {
   const eat = lexer.eat.bind(lexer);
   const eatUntil = lexer.eatUntil.bind(lexer);
 
-  debug(`== START =========================================================`);
-  debug(`== LEXER ======================================`);
+  debug(`===========================================================`);
+  debug(`= START LEXER                                             =`);
+  debug(`===========================================================`);
   debug(`lexing input`, input);
-  debug(`\`[~]${input.substring(0, 30).replaceAll(`\r`, `\\r`).replaceAll(`\n`, `\\n`)}\``);
+  debug(`    \`[~]${input.substring(0, 30).replaceAll(`\r`, `\\r`).replaceAll(`\n`, `\\n`)}\``);
   while (!eof()) {
     convertIndent(-3, []); // start at negative 1 indent
   }
