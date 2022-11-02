@@ -49,6 +49,7 @@ function generateFile(file, isMainFile, files) {
       const titleAppender = str => fileTitle = str.replaceAll(`"`, ``);
       withAppender(titleAppender, () => {
         generateStringExpression();
+        skip(); // statementend
       });
     }
     defaultAppender = defaultBrowserComponentAppender;
@@ -605,6 +606,58 @@ function generateFile(file, isMainFile, files) {
     skip(); // `)`
 
     return defaultCode(`(`, ...expressions, `)`);
+  }
+
+  function defaultToBrowser() {
+
+  }
+
+  function js(code) {
+    if (!defaultMode) throw new Error(`default mode required`);
+    if (!defaultComponent) throw new Error(`default component required`);
+    if (!defaultComponentPart) throw new Error(`default component part required`);
+    if (defaultMode === `browser`) {
+      return vueJs(defaultComponent, defaultComponentPart, code);
+    } else if (defaultMode === `browserhead`) {
+      return browserHeadJs(code);
+    } else if (defaultMode === `browserinit`) {
+      return browserInitJs(code);
+    } else if (defaultMode === `server`) {
+      return serverJs(code);
+    } else if (defaultMode === `serverinit`) {
+      return serverInitJs(code);
+    } else if (defaultMode === `database`) {
+      return databaseJs(code);
+    }
+  }
+
+  function browserJs(component, part, code) {
+    let componentObj = browserComponentCode[component];
+    if (!componentObj) {
+      componentObj = {};
+      browserComponentCode[component] = componentObj;
+    }
+    componentObj[part] = (componentObj[part] || ``) + code;
+  }
+
+  function browserHeadJs(code) {
+    browserHeadCode += code;
+  }
+
+  function browserInitJs(code) {
+    browserInitCode += code;
+  }
+
+  function serverJs(code) {
+    serverCode += code;
+  }
+
+  function serverInitJs(code) {
+    serverInitCode += code;
+  }
+
+  function databaseJs(code) {
+    databaseCode += code;
   }
 
   function defaultComponentCode(...values) {

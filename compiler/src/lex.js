@@ -13,7 +13,7 @@ const WHITESPACE = /^\s+/;
 
 const BOUNDRIES = [`\``, `"`, `(`, `)`, `{`, `}`, '[', `]`, `/*`, `//`, `./`, `../`];
 
-module.exports = input => {
+module.exports = (input, filePath) => {
   const lexer = createLexer(input, DEBUG);
   const is = lexer.is.bind(lexer);
   const isRegex = lexer.isRegex.bind(lexer);
@@ -28,7 +28,7 @@ module.exports = input => {
   const eatUntil = lexer.eatUntil.bind(lexer);
 
   debug(`===========================================================`);
-  debug(`= START LEXER                                             =`);
+  debug(`= START LEXER: ${filePath}`);
   debug(`===========================================================`);
   debug(`lexing input`, input);
   debug(`    \`[~]${input.substring(0, 30).replaceAll(`\r`, `\\r`).replaceAll(`\n`, `\\n`)}\``);
