@@ -1,5 +1,6 @@
 const fs = require(`fs`);
 const esbuild = require(`esbuild`);
+const vue3EsbuildPlugin = require("esbuild-plugin-vue3");
 const lex = require(`./lex`);
 const generateJs = require(`./generate-js`);
 
@@ -7,7 +8,9 @@ module.exports = (indexTemplatePath, browserTemplatePath, serverTemplatePath, fi
   let serverTemplateCode = fs.readFileSync(serverTemplatePath, 'utf-8');
   let browserTemplateCode = fs.readFileSync(browserTemplatePath, 'utf-8');
   let indexTemplateCode = fs.readFileSync(indexTemplatePath, 'utf-8');
-  let {serverInitCode, serverRequestCode, browserCode} = generateAppCode(files);
+  // let {serverInitCode, serverRequestCode, browserCode} = generateAppCode(files);
+  const code = `
+  `;
   try {
     browserCode = esbuild.transformSync(browserCode)?.code;
   } catch (e) {

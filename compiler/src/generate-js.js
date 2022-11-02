@@ -174,21 +174,17 @@ function generateFile(file, files) {
       });
     } else if (is(`modulereference`)) {
       const importPath = eatValue();
-      const importFiles = files.filter(x => x.path === importPath);
-      if (importFiles.length === 0) {
-        throw new Error(`could not find imported file "${importPath}"`);
-      }
-      const importFile = importFiles[0];
-      if (!importFile.js) {
-        lex(importFile);
-        generateFile(importFile, files);
-      }
-      if (importFile.isComponent) {
-        js(importFile.componentId);
+      const importedFile = importFile(importPath);
+      if (importedFile.isComponent) {
+        js(importedFile.componentId);
       } else {
-        js(`$bs.mod("${importFile.id}")`);
+        js(`$bs.mod("${importedFile.id}")`);
       }
     } else if (is(`stringstart`)) {
+      throw new Error(`implement me!`);
+    } else if (is(`pound`)) {
+      skip(); // pound
+      const name = eatRequired(`identifier`);
       throw new Error(`implement me!`);
     } else {
       die(`expected url, file reference or string`);
@@ -618,6 +614,19 @@ function generateFile(file, files) {
     skip(); // `)`
 
     return defaultCode(`(`, ...expressions, `)`);
+  }
+
+  function importFile(importPath) {
+    const importFiles = files.filter(x => x.path === importPath);
+    if (importFiles.length === 0) {
+      throw new Error(`could not find imported file "${importPath}"`);
+    }
+    const importFile = importFiles[0];
+    if (!importFile.js) {
+      lex(importFile);
+      generateFile(importFile, files);
+    }
+    return importFile;
   }
 
   function defaultToBrowser(component, part, fn) {

@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "esbuild": "^0.15.10"
+    "esbuild": "^0.15.10",
+    "esbuild-plugin-vue3": "^0.3.0"
   }
 }

@@ -102,7 +102,7 @@
                 },
             }
         });
-        app.component(`Todo`, {
+        app.component("Todo", {
             props: ["value"],
             template: `
                 <div :class="todoClass + ' notification margin-bottom-10 cursor-pointer has-text-left'" @click="toggleCompleted(value)">
@@ -110,6 +110,11 @@
                     <span :style="todoStyle">{{value.label}}</span>
                 </div>
             `,
+            data() {
+                return {
+                    todo__color: null
+                };
+            },
             computed: {
                 todoStyle() {
                     return this.value.completed ? { "text-decoration": "line-through" } : {};
