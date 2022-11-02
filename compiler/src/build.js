@@ -11,7 +11,15 @@ const SERVER_TEMPLATE = COMPILER_SRC + "/template/server-template.js";
 const APP_DIR = "app";
 
 const fileNames = getFileNamesRecursively(APP_DIR);
-const files = fileNames.map(_ => ({path: _.substring(APP_DIR.length + 1), name: _.substring(_.lastIndexOf("/") + 1), contents: fs.readFileSync(_).toString()}));
+const files = fileNames.map(_ => {
+  const path = _.substring(APP_DIR.length + 1);
+  return {
+    path,
+    name: _.substring(_.lastIndexOf("/") + 1),
+    contents: fs.readFileSync(_).toString(),
+    id: path.replaceAll(`/`, `--`).replaceAll(`.`, `-`),
+  };
+});
 const appCode = compile(INDEX_TEMPLATE, BROWSER_TEMPLATE, SERVER_TEMPLATE, files);
 
 console.log(path.resolve(DIST_DIR));

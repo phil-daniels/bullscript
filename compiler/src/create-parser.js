@@ -1,6 +1,9 @@
 const tokenTypes = require(`./token-types`)
 
 module.exports = input => {
+  if (!input) {
+    throw new Error(`input required`);
+  }
   const parser = {
     input,
     eatenInput: [],

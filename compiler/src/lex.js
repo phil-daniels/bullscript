@@ -13,7 +13,8 @@ const WHITESPACE = /^\s+/;
 
 const BOUNDRIES = [`\``, `"`, `(`, `)`, `{`, `}`, '[', `]`, `/*`, `//`, `./`, `../`];
 
-module.exports = (input, filePath) => {
+module.exports = (file) => {
+  const input = file.contents;
   const lexer = createLexer(input, DEBUG);
   const is = lexer.is.bind(lexer);
   const isRegex = lexer.isRegex.bind(lexer);
@@ -28,14 +29,14 @@ module.exports = (input, filePath) => {
   const eatUntil = lexer.eatUntil.bind(lexer);
 
   debug(`===========================================================`);
-  debug(`= START LEXER: ${filePath}`);
+  debug(`= START LEXER: ${file.path}`);
   debug(`===========================================================`);
   debug(`lexing input`, input);
   debug(`    \`[~]${input.substring(0, 30).replaceAll(`\r`, `\\r`).replaceAll(`\n`, `\\n`)}\``);
   while (!eof()) {
     convertIndent(-3, []); // start at negative 1 indent
   }
-  return lexer.output;
+  file.tokens = lexer.output;
 
   function convertIndent(parentIndent, terminators = [`}`, `)`, `]`]) {
     lexer;

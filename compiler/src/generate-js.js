@@ -1,4 +1,5 @@
 const createParser = require(`./create-parser`);
+const lex = require("./lex");
 
 const IDENTIFIER = /^[a-zA-Z_][a-zA-Z_0-9]*/;
 const HEAD_COMPONENT = `~~HEAD~~`;
@@ -8,12 +9,12 @@ const jsKeywordsToEscape = [
 ];
 
 module.exports = (file, files) => {
-  const isMainFile = file.path === `main.bs`;
-  const {title} = generateFile(file, isMainFile, files);
-  return {title};
+  return generateFile(file, files);
 };
 
-function generateFile(file, isMainFile, files) {
+function generateFile(file, files) {
+  if (file.js) return;
+  const isMainFile = file.path === `main.bs`;
   const parser = createParser(file.tokens);
   const eof = parser.eof.bind(parser);
   const is = parser.is.bind(parser);
@@ -27,7 +28,6 @@ function generateFile(file, isMainFile, files) {
   const skipRequired = parser.skipRequired.bind(parser);
   const asString = parser.asString.bind(parser);
 
-  let isComponentFile = false;
   let defaultMode = `browser`;
   let defaultComponent = `main.bs`;
   let defaultComponentPart = `template`;
@@ -41,12 +41,13 @@ function generateFile(file, isMainFile, files) {
   const defaultBrowserInitAppender = str => browserInitCode += str;
   let defaultAppender = defaultBrowserInitAppender;
 
-  let fileTitle;
+  let browserTitle;
   if (is(`identifier`) && isValue(`component`)) {
-    isComponent = true;
+    file.isComponent = true;
+    file.componentId = `bs-component-${file.id}`;
     skip(); // component
     if (isMainFile) {
-      const titleAppender = str => fileTitle = str.replaceAll(`"`, ``);
+      const titleAppender = str => browserTitle = str.replaceAll(`"`, ``);
       withAppender(titleAppender, () => {
         generateStringExpression();
         skip(); // statementend
@@ -56,9 +57,9 @@ function generateFile(file, isMainFile, files) {
   }
   generateBlockContents();
   let browserCode = ``;
-  if (isComponent) {
+  if (file.isComponent) {
     browserCode = `
-      app.component("bs-component-${file.path.replaceAll(`/`, `--`).replaceAll(`.`, `-`)}", {
+      app.component("${file.componentId}", {
         template: "${browserComponentCode[`template`].replaceAll(`"`, `\\"`)}",
         data() {
             return {
@@ -80,7 +81,7 @@ function generateFile(file, isMainFile, files) {
       };
     `;
   }
-  return {fileTitle, browserCode, serverCode, serverInitCode, databaseCode};
+  file.js = {browserTitle, browserCode, browserHeadCode, browserInitCode, serverCode, serverInitCode, databaseCode, browserComponentCode};
 
   function generateBlockContents(...terminators) {
     parser;
@@ -171,13 +172,24 @@ function generateFile(file, isMainFile, files) {
         generateStringExpression();
         code(`"/>`);
       });
-    } else if (is(`dot`) && isAhead(`slash`)) {
-      skip(); // dot
-      skip(); // slash
-      generateFileContents();
-      //!!!!!!!!!!!! replace tokens with copy of tokens from imported file?
+    } else if (is(`modulereference`)) {
+      const importPath = eatValue();
+      const importFiles = files.filter(x => x.path === importPath);
+      if (importFiles.length === 0) {
+        throw new Error(`could not find imported file "${importPath}"`);
+      }
+      const importFile = importFiles[0];
+      if (!importFile.js) {
+        lex(importFile);
+        generateFile(importFile, files);
+      }
+      if (importFile.isComponent) {
+        js(importFile.componentId);
+      } else {
+        js(`$bs.mod("${importFile.id}")`);
+      }
     } else if (is(`stringstart`)) {
-
+      throw new Error(`implement me!`);
     } else {
       die(`expected url, file reference or string`);
     }

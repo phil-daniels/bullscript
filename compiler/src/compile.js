@@ -30,18 +30,11 @@ function generateAppCode(files) {
   let appBrowserCode = "";
   let currentFile;
   try {
-    for (const file of files) {
-      currentFile = file;
-      file.tokens = lex(file.contents);
-    }
-    for (const file of files) {
-      currentFile = file;
-      const code = generateJs(file, files);
-      appServerInitCode += code.serverInit;
-      appServerRequestCode += code.serverRequest;
-      appBrowserCode += code.browser;
-      appBrowserCode += `};`;
-    }
+    const mainFiles = files.filter(x => x.path === `main.bs`);
+    if (mainFiles.length === 0) throw new Error(`no main.bs found`);
+    const mainFile = mainFiles[0];
+    lex(mainFile);
+    generateJs(mainFile, files);
   } catch(e) {
     if (e instanceof Error) {
       console.error(`UNEXPECTED ERROR OCURRED`);
