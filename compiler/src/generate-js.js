@@ -166,7 +166,7 @@ function generateFile(file, isMainFile, files) {
     skipRequired(`identifier`); // style
     if (isValue(`url`)) {
       skip(); // url
-      defaultToBrowserHtmlHeader(() => {
+      defaultToBrowserHead(() => {
         code(`<link rel="stylesheet" href="`);
         generateStringExpression();
         code(`"/>`);
@@ -608,8 +608,44 @@ function generateFile(file, isMainFile, files) {
     return defaultCode(`(`, ...expressions, `)`);
   }
 
-  function defaultToBrowser() {
+  function defaultToBrowser(component, part, fn) {
+    if (!defaultMode) throw new Error(`default mode required`);
+    if (!component) throw new Error(`default component required`);
+    if (!part) throw new Error(`default component part required`);
+    const savedComponent = component;
+    defaultComponent = component;
+    const savedPart = part;
+    defaultComponentPart = part;
+    withDefaultMode(`browser`, fn);
+    defaultComponent = savedComponent;
+    defaultComponentPart = savedPart;
+  }
 
+  function defaultToBrowserHead(fn) {
+    withDefaultMode(`browserhead`, fn);
+  }
+
+  function defaultToBrowserInit(fn) {
+    withDefaultMode(`browserinit`, fn);
+  }
+
+  function defaultToServer(fn) {
+    withDefaultMode(`server`, fn);
+  }
+
+  function defaultToServerInit(fn) {
+    withDefaultMode(`serverinit`, fn);
+  }
+
+  function defaultToDatabase(fn) {
+    withDefaultMode(`database`, fn);
+  }
+
+  function withDefaultMode(mode, fn) {
+    const savedMode = defaultMode;
+    defaultMode = mode;
+    fn();
+    defaultMode = savedMode;
   }
 
   function js(code) {
@@ -617,7 +653,7 @@ function generateFile(file, isMainFile, files) {
     if (!defaultComponent) throw new Error(`default component required`);
     if (!defaultComponentPart) throw new Error(`default component part required`);
     if (defaultMode === `browser`) {
-      return vueJs(defaultComponent, defaultComponentPart, code);
+      return browserJs(defaultComponent, defaultComponentPart, code);
     } else if (defaultMode === `browserhead`) {
       return browserHeadJs(code);
     } else if (defaultMode === `browserinit`) {
