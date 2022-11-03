@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@vue/compiler-sfc": "^3.2.41",
     "esbuild": "^0.15.10",
     "esbuild-plugin-vue3": "^0.3.0"
   }

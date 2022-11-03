@@ -1,5 +1,6 @@
 const fs = require(`fs`);
 const esbuild = require(`esbuild`);
+const {compileTemplate, compileStyle} = require(`@vue/compiler-sfc`);
 const lex = require(`./lex`);
 const generateJs = require(`./generate-js`);
 
@@ -14,11 +15,24 @@ module.exports = (indexTemplatePath, browserTemplatePath, serverTemplatePath, fi
     <button @click="increment()">+</button>
     <p class="text">{{message}}</>
   `;
+  const templateResult = compileTemplate({
+    id: `YO_ID`,
+    source: templateCode,
+    filename: `coooooool_file.yodude`,
+  });
   const styleCode = `
     .text {
-      color: v-bind('messageColor')
+      color: v-bind('messageColor.okay')
     }
   `;
+  const styleResult = compileStyle({
+    source: styleCode,
+    filename: `super_cool_file.txt`,
+    id: `data-v-nice-id-man`,
+    scoped: true,
+    trim: true,
+    isProd: false,
+  });
   const vueCode = `
     const app = Vue.createApp({
       template: "<Main/>"

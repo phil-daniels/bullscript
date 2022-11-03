@@ -1,6 +1,6 @@
 const {compileTemplate} = require(`@vue/compiler-sfc`);
 
-https://programeasily.com/2021/01/30/computed-in-vue-3/
+//https://programeasily.com/2021/01/30/computed-in-vue-3/
 
 const input = {
   Main: {
