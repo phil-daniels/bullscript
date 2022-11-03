@@ -53,50 +53,45 @@ appHtml = `
         }
     </style>
     <script>
-    const app = Vue.createApp({
-        template: "<Main/>"
+      const app = Vue.createApp({
+          template: "<Main/><Main2/>"
       });
-      const {
-        createElementVNode: _createElementVNode,
-        renderList: _renderList,
-        Fragment: _Fragment,
-        openBlock: _openBlock,
-        createElementBlock: _createElementBlock,
-        toDisplayString: _toDisplayString
-      } = Vue;
-      const _hoisted_1 = /*#__PURE__*/_createElementVNode("h1", null, "Hey man", -1 /* HOISTED */)
-      app.component("Main", {
-        render: function(_ctx, _cache) {
-          return (
-            _openBlock(),
-            _createElementBlock(
-              _Fragment, null, [
-                _hoisted_1,
-                (
-                  _openBlock(true),
-                  _createElementBlock(
-                    _Fragment,
-                    null,
-                    _renderList(
-                      _ctx.nums, (num) => {
-                        return (
-                          _openBlock(),
-                          _createElementBlock("ol", null, _toDisplayString(num), 1 /* TEXT */)
-                        )
-                      }
-                    ),
-                    256 /* UNKEYED_FRAGMENT */
-                  )
-                )
-              ],
-              64 /* STABLE_FRAGMENT */
-            )
-          )
+      const _bs_style = Vue.reactive({
+        person: {parent: {name: "Steve"}}
+      })
+      const mixin = {
+        computed: {
+          _bs_style: {
+            get() {
+              return _bs_style;
+            }
+          }
         },
-        data: function() {
-          return {nums: [1, 2, 3]};
+      };
+      app.component("Main", {
+        mixins: [mixin],
+        template: \`<button @click="change()">Change</button><br>{{_bs_style.person.parent.name}}\`,
+        methods: {
+          change() {
+            this._bs_style.person.parent.name = "Tim";
+          }
         }
       });
+      app.component("Main2", {
+        mixins: [mixin],
+        template: \`<button @click="change()">Change</button><br>{{_bs_style.person.parent.name}}\`,
+        methods: {
+          change() {
+            console.dir(this);
+            console.dir(this?._bs_style);
+            console.dir(this?._bs_style?.person);
+            console.dir(this?._bs_style?.person?.parent);
+            console.dir(this?._bs_style?.person?.parent?.name);
+            this._bs_style.person.parent.name = "John";
+          }
+        }
+      });
+      /*COMPONENTS*/
       app.mount("#app");
     </script>
 </body>

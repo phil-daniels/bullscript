@@ -34,7 +34,7 @@ function generateAppCode(files) {
     const mainFiles = files.filter(x => x.path === `main.bs`);
     if (mainFiles.length === 0) throw new Error(`no main.bs found`);
     const mainFile = mainFiles[0];
-    lex(mainFile);
+    lex(mainFile, files);
     generateJs(mainFile, files);
   } catch(e) {
     if (e instanceof Error) {

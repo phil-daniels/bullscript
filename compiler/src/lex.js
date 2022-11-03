@@ -141,26 +141,10 @@ module.exports = (file, files) => {
     skip(2); // .. or ./
     if (referencesParent) skip(); // /
     const value = eatUntil(() => eof() || isRegex(WHITESPACE) || is(BOUNDRIES));
-    const lastToken = lexer.output[lexer.output.length - 1];
-    let wasStyleImport = false;
-    if (lastToken?.tokenType === `identifier` && lastToken?.value === `import`) {
-      const secondToLastToken = lexer.output[lexer.output.length - 2];
-      if (secondToLastToken?.tokenType === `identifier` && secondToLastToken?.value === `style`) {
-        wasStyleImport = true;
-        lexer.output = lexer.output.slice(0, lexer.output.length - 2);
-      }
-    }
-    // if last was import and 2nd to last was style
-    //   remove last 2 tokens
-    //   skip creating modulereference token
-    //   get source for file
-    //   append to input
-    if (!wasStyleImport) {
-      if (referencesParent) {
-        create(`modulereferenceparent`, value);
-      } else {
-        create(`modulereference`, value);
-      }
+    if (referencesParent) {
+      create(`modulereferenceparent`, value);
+    } else {
+      create(`modulereference`, value);
     }
   }
 

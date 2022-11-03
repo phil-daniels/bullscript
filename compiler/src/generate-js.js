@@ -164,23 +164,84 @@ function generateFile(file, files) {
   }
 
   function generateStyleStatement() {
-    skipRequired(`identifier`); // style
-    if (isValue(`url`)) {
-      skip(); // url
-      defaultToBrowserHead(() => {
-        code(`<link rel="stylesheet" href="`);
-        generateStringExpression();
-        code(`"/>`);
-      });
-    } else if (is(`modulereference`)) {
-      const importPath = eatValue();
-      const importedFile = importFile(importPath);
-      if (importedFile.isComponent) {
-        js(importedFile.componentId);
-      } else {
-        js(`$bs.mod("${importedFile.id}")`);
+
+    // style is list of class names
+    //   style #test #blah
+    //   === `_bs_style_test = "blah"`
+    // static style (compiler maps static css to classNames to reuse)
+    //   style #test "color: red"
+    //   === `
+    //     <style>
+    //       ._bs_1 {color: red;}
+    //     </>
+    //     const _bs_test = "_bs_1";
+    //   `
+    // dynamic style
+    //   style #test #blah, "
+    //     {if (name == "Bob") "text-decoration: line-through"}
+    //     color: {myColor}
+    //     backround-color: {if (count > 6) "red" else "green" }
+    //   "
+    //   :p #test "hi"
+    //   === `
+    /*
+      const mixin = {
+        data() {
+          value: ""
+        },
+        computed: {
+          _bs_1: function() {
+            return ""+(this.name == "Bob" ? "text-decoration: line-through;" : "")
+                "color: "+(this.myColor)+";"
+                "background-color: "+(count > 6 ? "red" : "green")+";";
+          }
+        }
       }
-    } else if (is(`stringstart`)) {
+    */
+    //     <template>
+    //       <p :class="test">hi</p>
+    //     </template>
+    //     <data>
+    //       name: "Bill"
+    //       _bs_3: "blah"
+    //     </data>
+    //     <computed>
+    //       test: function() {
+    //         return "blah "+this._bs_1;
+    //       }
+    //     </>
+    //     <watch>
+    //       _bs_1: function(newValue) {
+    //         document.styleSheets[0].insertRule(newValue, 0);
+    //         codeDiv.classList.add("code");
+    //       }
+    //     </>
+    //     const _bs_style_test = "_bs_2";
+    //   `
+
+    skipRequired(`identifier`); // style
+    if (isValue(`import`)) {
+      skip(); // import
+      if (isValue(`url`)) {
+        skip(); // url
+        defaultToBrowserHead(() => {
+          code(`<link rel="stylesheet" href="`);
+          generateStringExpression();
+          code(`"/>`);
+        });
+      } else if (is(`modulereference`)) {
+        const importPath = eatValue();
+        const importedFile = importFile(importPath);
+        if (importedFile.isComponent) {
+          js(importedFile.componentId);
+        } else {
+          js(`$bs.mod("${importedFile.id}")`);
+        }
+      }
+    } else {
+      
+    }
+     else if (is(`stringstart`)) {
       throw new Error(`implement me!`);
     } else if (is(`pound`)) {
       skip(); // pound
@@ -623,7 +684,7 @@ function generateFile(file, files) {
     }
     const importFile = importFiles[0];
     if (!importFile.js) {
-      lex(importFile);
+      lex(importFile, files);
       generateFile(importFile, files);
     }
     return importFile;
