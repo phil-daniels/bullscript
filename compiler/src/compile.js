@@ -1,6 +1,6 @@
 const fs = require(`fs`);
 const esbuild = require(`esbuild`);
-const {compileTemplate, compileStyle} = require(`@vue/compiler-sfc`);
+const {compileTemplate, compileStyle, compileScript} = require(`@vue/compiler-sfc`);
 const lex = require(`./lex`);
 const generateJs = require(`./generate-js`);
 
@@ -8,54 +8,7 @@ module.exports = (indexTemplatePath, browserTemplatePath, serverTemplatePath, fi
   let serverTemplateCode = fs.readFileSync(serverTemplatePath, 'utf-8');
   let browserTemplateCode = fs.readFileSync(browserTemplatePath, 'utf-8');
   let indexTemplateCode = fs.readFileSync(indexTemplatePath, 'utf-8');
-  // let {serverInitCode, serverRequestCode, browserCode} = generateAppCode(files);
-  const templateCode = `
-    <h1>Counter</h1>
-    <p>Count: {{count}}</p>
-    <button @click="increment()">+</button>
-    <p class="text">{{message}}</>
-  `;
-  const templateResult = compileTemplate({
-    id: `YO_ID`,
-    source: templateCode,
-    filename: `coooooool_file.yodude`,
-  });
-  const styleCode = `
-    .text {
-      color: v-bind('messageColor.okay')
-    }
-  `;
-  const styleResult = compileStyle({
-    source: styleCode,
-    filename: `super_cool_file.txt`,
-    id: `data-v-nice-id-man`,
-    scoped: true,
-    trim: true,
-    isProd: false,
-  });
-  const vueCode = `
-    const app = Vue.createApp({
-      template: "<Main/>"
-    });
-    app.component("Main", {
-      data() {
-        return {
-          count: 0
-        };
-      },
-      computed: {
-        messageColor: function() {
-          return this.count < 6 ? "green" : "red";
-        }
-      },
-      methods: {
-        increment: function() {
-          this.count++;
-        }
-      }
-    });
-    app.mount("#app");
-  `;
+  let {serverInitCode, serverRequestCode, browserCode} = generateAppCode(files);
   try {
     browserCode = esbuild.transformSync(browserCode)?.code;
   } catch (e) {

@@ -13,7 +13,7 @@ const WHITESPACE = /^\s+/;
 
 const BOUNDRIES = [`\``, `"`, `(`, `)`, `{`, `}`, '[', `]`, `/*`, `//`, `./`, `../`];
 
-module.exports = (file) => {
+module.exports = (file, files) => {
   const input = file.contents;
   const lexer = createLexer(input, DEBUG);
   const is = lexer.is.bind(lexer);
@@ -141,20 +141,32 @@ module.exports = (file) => {
     skip(2); // .. or ./
     if (referencesParent) skip(); // /
     const value = eatUntil(() => eof() || isRegex(WHITESPACE) || is(BOUNDRIES));
-    if (referencesParent) {
-      create(`modulereferenceparent`, value);
-    } else {
-      create(`modulereference`, value);
+    const lastToken = lexer.output[lexer.output.length - 1];
+    let wasStyleImport = false;
+    if (lastToken?.tokenType === `identifier` && lastToken?.value === `import`) {
+      const secondToLastToken = lexer.output[lexer.output.length - 2];
+      if (secondToLastToken?.tokenType === `identifier` && secondToLastToken?.value === `style`) {
+        wasStyleImport = true;
+        lexer.output = lexer.output.slice(0, lexer.output.length - 2);
+      }
+    }
+    // if last was import and 2nd to last was style
+    //   remove last 2 tokens
+    //   skip creating modulereference token
+    //   get source for file
+    //   append to input
+    if (!wasStyleImport) {
+      if (referencesParent) {
+        create(`modulereferenceparent`, value);
+      } else {
+        create(`modulereference`, value);
+      }
     }
   }
 
   function convertBackticks() {
     lexer;
     debug(`BACKTICK MODE`);
-    // 1) skip backtick
-    // 2) skip whitespace
-    // 3) convertIndent
-    // 4) will return on deindent, then continue to 2) until close backtick
     skip(); // backtick
     if (is(`\r`)) skip();
     if (is(`\n`)) skip();
