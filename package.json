@@ -1,4 +1,15 @@
 {
+  "name": "compiler-src",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "runexample1": "node ./src/index.js ./examples/counter/src ./examples/counter/dist && node ./examples/counter/dist/app.js",
+    "buildbs": "node ./src/index.js C:/Users/phili/OneDrive/Documents/GitHub/bullscript.marketplace/src C:/Users/phili/OneDrive/Documents/GitHub/bullscript.marketplace/dist && node C:/Users/phili/OneDrive/Documents/GitHub/bullscript.marketplace/dist/bullscript-console-app.js",
+    "playground": "node ./src/index.js C:/Users/phili/OneDrive/Documents/GitHub/bs-playground/src C:/Users/phili/OneDrive/Documents/GitHub/bs-playground/dist && node C:/Users/phili/OneDrive/Documents/GitHub/bs-playground/dist/app.js"
+  },
+  "author": "",
+  "license": "ISC",
   "dependencies": {
     "esbuild": "^0.15.10"
   }
