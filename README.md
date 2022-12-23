@@ -12,6 +12,8 @@ Currently in the early development stages. Not ready for use, but available for 
 
 ## Hello world
 
+Compiling will produce dist/app.js. If you run `node dist/app.js` a web server will run and serve an HTML page that says `Hello world`.
+
 ### main.bs
 
 ```
